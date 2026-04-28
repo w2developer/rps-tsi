@@ -68,27 +68,50 @@ export function abrirModalCadastro(supabase, aoSalvar) {
         if (!file) return;
 
         const reader = new FileReader();
+        // Dentro do leitor do arquivo JSON no modalCadastro.js
         reader.onload = async (event) => {
             try {
-                const listaAlunos = JSON.parse(event.target.result);
-                if (!Array.isArray(listaAlunos)) throw new Error("O JSON deve ser uma lista []");
+                const dadosBrutos = JSON.parse(event.target.result);
+                if (!Array.isArray(dadosBrutos)) throw new Error("O JSON deve ser uma lista []");
 
-                const { error } = await supabase.from('alunos').insert(listaAlunos);
-                if (error) throw error;
+                // 1. Prepara a lista de alunos com o status do certificado vindo do JSON
+                const listaAlunos = dadosBrutos.map(item => ({
+                    nome: item.nome,
+                    turma: item.turma,
+                    dia_aula: item.dia_aula,
+                    data_termino: item.data_termino,
+                    // Usa o valor do JSON ou um padrão caso esteja vazio
+                    certificado_premium: item.certificado_premium || "No aguardo" 
+                }));
 
-                Swal.fire({
-                    title: 'Sucesso!',
-                    text: `${listaAlunos.length} alunos importados.`,
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
+                // Insere os alunos e recupera os IDs
+                const { data: alunosInseridos, error: errAlunos } = await supabase
+                    .from('alunos')
+                    .insert(listaAlunos)
+                    .select();
+
+                if (errAlunos) throw errAlunos;
+
+                // 2. Prepara a lista de presenças usando as datas vindas do JSON
+                // Fazemos um de-para usando o nome para ligar o ID gerado aos dados do JSON
+                const registrosPresenca = alunosInseridos.map(alunoInserido => {
+                    const dadosOriginais = dadosBrutos.find(d => d.nome === alunoInserido.nome);
+                    return {
+                        aluno_id: alunoInserido.id,
+                        // Usa a data do JSON ou a data de hoje como fallback
+                        data_presenca: dadosOriginais.ultima_presenca || new Date().toISOString().split('T')[0]
+                    };
                 });
-                
+
+                const { error: errFreq } = await supabase.from('frequencia').insert(registrosPresenca);
+                if (errFreq) throw errFreq;
+
+                alert(`Sucesso! ${listaAlunos.length} alunos importados com as presenças e certificados do arquivo.`);
                 modalDiv.remove();
                 aoSalvar();
             } catch (err) {
-                Swal.fire('Erro', "Falha ao importar JSON: " + err.message, 'error');
-                e.target.value = ''; 
+                alert("Erro na importação: " + err.message);
+                console.error(err);
             }
         };
         reader.readAsText(file);
