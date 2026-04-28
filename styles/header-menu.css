@@ -1,0 +1,48 @@
+header {
+    display: none;
+    padding: 10px 10px;
+    align-items: center;
+    background-color: #10172A;
+    justify-content: space-between;
+    box-shadow: 0 2px 4px #0000001a;
+}
+
+header h1 {
+    color: #fff;
+    font-size: 1.5rem;
+    margin-left: 20px;
+}
+
+header nav ul {
+    gap: 20px;
+    display: flex;
+    font-size: 1rem;
+    margin-right: 20px;
+}
+
+header nav a {
+    color: #fff;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: color .3s ease;
+}
+
+header nav a:hover {
+    color: #e0e0e0;
+}
+
+header nav a::after {
+    content: '';
+    width: 0;
+    height: 2px;
+    display: block;
+    background-color: #fff;
+    transition: width .3s ease;
+}
+
+header nav a:hover::after {
+    width: 100%;
+}
+header nav a.active-menu:hover::after {
+    width: 100%;
+}

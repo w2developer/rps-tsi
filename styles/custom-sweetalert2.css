@@ -1,0 +1,22 @@
+.swal2-container {
+    /* crie um efeito blur */
+    backdrop-filter: blur(5px) !important;
+}
+
+.swal2-popup {
+    border-radius: 8px !important;
+}
+
+.swal2-title {
+    font-size: 1.5rem !important;
+    color: #333 !important;
+}
+
+.swal2-html-container {
+    font-size: 1rem !important;
+    color: #555 !important;
+}
+
+.swal2-icon {
+    font-size: .6rem !important;
+}

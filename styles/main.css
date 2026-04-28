@@ -1,0 +1,36 @@
+@import url('./header-menu.css');
+@import url('./table.css');
+@import url('./filtros-e-adicionar.css');
+@import url('./modal.css');
+@import url('./custom-sweetalert2.css');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    color: #10172A;
+    overflow-x: hidden;
+    background-color: #f4f4f4;
+}
+
+.container {
+    padding: 1rem;
+    margin: 0 auto;
+    overflow-x: auto;
+}
+
+.pesquisa {
+    margin: 1rem 0;
+    display: flex;
+    justify-content: start;
+}
+.pesquisa input {
+    width: 250px;
+    padding: .5rem .8rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}

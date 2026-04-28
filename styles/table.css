@@ -1,0 +1,141 @@
+table {
+    width: 100%;
+    font-size: .9rem;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+table th, table td {
+    text-align: left;
+    padding: .5rem 1rem;
+    border: 1px solid #ddd;
+}
+
+table th {
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    background-color: #10172A;
+}
+
+/* Estilo para linhas pares */
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+table tr {
+    cursor: cell;
+    transition: .1s ease;
+}
+table tr:hover {
+    background-color: #d1e7dd !important;
+}
+
+
+/* Primeira coluna */
+table td:nth-child(1) {
+    max-width: 200px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+}
+
+/* Estilo para células */
+table td {
+    color: #333;
+    text-align: center;
+}
+
+/* Alinhamento dos Dados */
+table thead th {
+    text-align: center;
+}
+.listagem td:nth-child(1) {
+    text-align: left;
+}
+.listagem td:nth-child(n+2) {
+    text-align: center;
+}
+
+/* Botões */
+.operacoes {
+    gap: 8px;
+    height: 100%;
+    display: flex;
+    /* flex-wrap: wrap; */
+    align-items: center;
+    justify-content: center;
+}
+.operacoes button {
+    border: none;
+    display: flex;
+    margin: 0 auto;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Cor diferente para os botões */
+.operacoes .btn-presenca {
+    background: #6c757d;
+}
+.operacoes .btn-tarefas {
+    position: relative;
+    background: #17a2b8;
+}
+.operacoes .btn-observacao {
+    background: #6c757d;
+}
+.operacoes .btn-excluir {
+    background: #dc3545;
+}
+.operacoes .btn-historico {
+    background: #6c757d;
+}
+.operacoes .btn-editar {
+    background: #17a2b8;
+}
+
+/* Ícones */
+.operacoes i {
+    padding: .1rem;
+    font-size: 1.2rem;
+}
+
+/* badge */
+.badge {
+    display: flex;
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    color: white;
+    font-size: 0.6rem;
+    position: absolute;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background-color: red;
+}
+
+.rematricula button, .status-frequencia button {
+    cursor: pointer;
+    font-weight: 500;
+    padding: .2rem .4rem;
+}
+.rematricula .no {
+    background: #fff2b9;
+    border: 1px solid #c1b376;
+}
+.status-frequencia .no {
+    background: #ffb9b9;
+    border: 1px solid #c17676;
+
+}
+.rematricula .yes, .status-frequencia .yes {
+    background: #b9ffbb;
+    border: 1px solid #86c176;
+}
+

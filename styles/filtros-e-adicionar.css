@@ -1,0 +1,38 @@
+.filtros-e-adicionar {
+    display: flex;
+    margin-top: 20px;
+    padding: 1rem 1rem;
+    align-items: center;
+    box-shadow: 0 0 4px #0000001a;
+    justify-content: space-between;
+}
+.filtros-e-adicionar .filtros {
+    display: flex;
+    gap: 10px;
+}
+.filtros-e-adicionar .filtros select {
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.filtros-e-adicionar .filtros select:hover {
+    border-color: #999;
+}
+.filtros-e-adicionar .btn-adicionar {
+    border: none;
+    display: flex;
+    color: #fff;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    align-items: center;
+    background-color: #10172A;
+}
+.filtros-e-adicionar .btn-adicionar:hover {
+    background-color: #151515;
+}

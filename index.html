@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPS | Relatórios Pedagógicos Semanais</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/main.js" defer></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <!-- Remix Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <header>
+        <h1>RPS</h1>
+        <nav>
+            <ul>
+                <li><a href="/" class="active-menu">Painel Principal</a></li>
+                <li><a href="/relatorios">Relatórios</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="filtros-e-adicionar">
+            <div class="filtros">
+                <div class="selecionar-turma">
+                    <label for="turma">Selecione a Turma:</label>
+                    <select id="turma">
+                        <option value="todos" selected>Todas</option>
+                        <option value="manha">Manhã</option>
+                        <option value="tarde">Tarde</option>
+                    </select>
+                </div>
+                <div class="selecionar-dia">
+                    <label for="dia">Selecione o Dia:</label>
+                    <select id="dia">
+                        <option value="todos">Todos</option>
+                        <option value="segunda" selected>Segunda/Terça</option>
+                        <option value="quarta">Quarta/Quinta</option>
+                        <option value="sexta">Sexta</option>
+                        <option value="sabado">Sábado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="adicionar-aluno">
+                <button class="btn-adicionar" onclick="abrirModalCadastro()">
+                    <i class="ri-add-fill"></i> Adicionar Aluno
+                </button>
+            </div>
+        </div>
+        
+        <div class="pesquisa">
+            <input type="text" id="pesquisa" placeholder="Pesquisar aluno...">
+        </div>
+        
+        <table class="listagem">
+            <colgroup>
+                <col style="width: 30%;">
+                <col style="width: 10%;">
+                <col style="width: 15%;">
+                <col style="width: 10%;">
+                <col style="width: 10%;">
+                <col style="width: 10%;">
+                <col style="width: 25%;">
+            </colgroup>
+
+            <thead>
+                <tr>
+                    <th>Nome (A-Z)</th>
+                    <th>Data de Término</th>
+                    <th>Tempo Para Conclusão</th>
+                    <th>Última Presença</th>
+                    <th>Status da Frequência</th>
+                    <th>Certificado Premium</th>
+                    <th>Operações</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+        </table>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>
