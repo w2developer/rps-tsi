@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPS | Documentação</title>
+    <link rel="shortcut icon" href="/assets/logo.svg" type="image/x-icon">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/doc.css">
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/doc.js" defer></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <!-- Remix Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <header>
+        <h1><a href="/index.html">RPS</a></h1>
+        <nav>
+            <ul>
+                <li><a href="/">Página Inicial</a></li>
+                <li><a href="/pages/doc.html" class="active-menu">Documentação</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main>
+            <h2>Documentação</h2>
+            <div class="section filosofia">
+                <h3>Filosofia do Sistema</h3>
+                <p>
+                    O RPS não é apenas uma lista de nomes; é o nosso painel de controle de evasão e sucesso. Cada dado inserido reflete a situação real do aluno em sala de aula.
+                </p>
+            </div>
+
+            <div class="section navegacao">
+                <h3>Navegação</h3>
+                <ul>
+                    <li><a href="#um">Filtro por turma e dia (automático ou manual)</a></li>
+                    <li><a href="#dois">Pesquisa de alunos por nome</a></li>
+                    <li><a href="#tres">Cadastro de novos alunos (ou importação de um arquivo JSON)</a></li>
+                    <li><a href="#quatro">Controle de rematrículas</a></li>
+                    <li><a href="#cinco">Controle de faltas</a></li>
+                    <li><a href="#seis">Controle de indicações no Certificado-Premium</a></li>
+                    <li><a href="#sete">Operações Básicas (Marcar Presença, Adicionar Tarefas, Excluir aluno, Editar aluno)</a></li>
+                    <li><a href="#oito">Dica</a></li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <div class="section" id="um">
+                    <h3>Filtro por turma e dia (automático ou manual)</h3>
+                    <img src="/assets/img_docs/um.png" alt="">
+                    <p>
+                        O filtro permite que voce escolha qual turma e dia deseja visualizar, o que facilita a navegação e a busca de informacoes relevantes.
+                    </p>
+                    <p>
+                        Sempre que você acessar o RPS, o filtro seleciona automaticamente o turno e o dia atual. (<i>com base em cálculos de tempo e dias</i>)
+                    </p>
+                </div>
+
+                <div class="section" id="dois">
+                    <h3>Pesquisa de alunos por nome</h3>
+                    <img src="/assets/img_docs/dois.png" alt="">
+                    <p>
+                        A pesquisa de alunos permite que voce encontre facilmente os alunos que voce deseja visualizar ou editar.
+                    </p>
+                </div>
+
+                <div class="section" id="tres">
+                    <h3>Cadastro de novos alunos (ou importação de um arquivo JSON)</h3>
+                    <img src="/assets/img_docs/tres.png" alt="">
+                    <p>
+                        O cadastro de alunos permite que voce adicione novos alunos ao sistema, ou importe um arquivo JSON contendo uma lista de alunos.
+                    </p>
+                </div>
+
+                <div class="section" id="quatro">
+                    <h3>Controle de rematrículas</h3>
+                    <div class="imgs">
+                        <img src="/assets/img_docs/quatro-1.png" alt="">
+                        <span>← Botão →</span>
+                        <img src="/assets/img_docs/quatro-2.png" alt="">
+                    </div>
+                    <br>
+                    <ul>
+                        <li><b>Aguardando Rematrícula: </b>Este botão aparece quando restam entre 1 e 29 dias para concluir o curso.</li>
+                        <li><b>Rematrícula OK: </b>Clique no botão anterior para marcar a rematrícula como concluida com sucesso.</li>
+                    </ul>
+                </div>
+
+                <div class="section" id="cinco">
+                    <h3>Controle de faltas</h3>
+                    <div class="imgs">
+                        <img src="/assets/img_docs/cinco-1.png" alt="">
+                        <span>← Botão →</span>
+                        <img src="/assets/img_docs/cinco-2.png" alt="">
+                    </div>
+                    <p>
+                        <ul>
+                            <li><b>Muitas Faltas: </b> Alunos com mais de 14 dias sem presença.</li>
+                            <li><b>Contato feito: </b> Clique no botão anterior para marcar e indicar que a escola fez contato com o aluno.</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="section" id="seis">
+                    <h3>Controle de indicações no Certificado-Premium</h3>
+                    <img src="/assets/img_docs/seis.png" alt="">
+                    <p>
+                        <ul>
+                            <li><b>No aguardo: </b> Falta verificar o login do aluno.</li>
+                            <li><b>Feito: </b> O aluno fez as indicações.</li>
+                            <li><b>Não quer fazer: </b> O aluno nao quer fazer as indicações.</li>
+                            <li><b> Falha no Login: </b> Houve falha no login do aluno.</li>
+                            <li><b>Login Pronto: </b> O login do aluno está pronto.</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="section" id="sete">
+                    <h3>Operações Básicas</h3>
+                    <img src="/assets/img_docs/sete.png" alt="">
+                    <p>
+                        <ul>
+                            <li><b>Marcar Presença: </b> Marque ou desmarque a presença do aluno.</li>
+                            <li><b>Adicionar Tarefa: </b> Adicione uma tarefa ao aluno. As tarefas servem para a equipe. (Ex.: "Pedir indicações ao aluno no dia seguinte").</li>
+                            <li><b>Excluir aluno: </b> Exclua o aluno do sistema.</li>
+                            <li><b>Editar aluno: </b> Edite as informações do aluno.</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="section" id="oito">
+                    <h3>Dica</h3>
+                    <p>
+                        Cadastre um aluno de exemplo e teste todas as funcionalidades do sistema, e depois exclua-o.
+                    </p>
+                    <p>
+                        Exclua os alunos que já finalizaram o curso e não fizeram a rematrícula (em caso de rematrícula ajuste a data de término).
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

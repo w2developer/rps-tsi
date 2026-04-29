@@ -1,5 +1,5 @@
 header {
-    display: none;
+    display: flex;
     padding: 10px 10px;
     align-items: center;
     background-color: #10172A;
@@ -7,10 +7,11 @@ header {
     box-shadow: 0 2px 4px #0000001a;
 }
 
-header h1 {
+header h1 a {
     color: #fff;
     font-size: 1.5rem;
     margin-left: 20px;
+    text-decoration: none;
 }
 
 header nav ul {
@@ -44,5 +45,8 @@ header nav a:hover::after {
     width: 100%;
 }
 header nav a.active-menu:hover::after {
+    width: 100%;
+}
+header nav a.active-menu::after {
     width: 100%;
 }
