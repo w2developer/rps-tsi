@@ -2,22 +2,22 @@ import { abrirModalTarefas } from "./components/modalTarefas.js";
 import { abrirModalCadastro } from "./components/modalCadastro.js";
 import { abrirModalEdicao } from "./components/modalEdicao.js";
 
-// 1. CONFIGURAÇÃO
+// --- 1. CONFIGURAÇÃO E CONSTANTES ---
 const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
 const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// --- FUNÇÕES DE APOIO ---
+// --- 2. FUNÇÕES DE APOIO (UTILITÁRIOS) ---
 
-function formatarDataBR(dataISO) {
+const formatarDataBR = (dataISO) => {
     if (!dataISO || dataISO === "---") return "---";
     const [ano, mes, dia] = dataISO.split('-');
     return `${dia}/${mes}/${ano}`;
-}
+};
 
-function calcularTempoConclusao(dataTermino) {
+const calcularTempoConclusao = (dataTermino) => {
     if (!dataTermino) return "---";
     const diffMs = new Date(dataTermino) - new Date();
     if (diffMs < 0) return "---";
@@ -27,29 +27,27 @@ function calcularTempoConclusao(dataTermino) {
     const semanas = Math.floor((totalDias % 30) / 7);
     const dias = totalDias % 7;
     return `${meses}m, ${semanas}sem e ${dias}d`;
-}
+};
 
-function tempoConclusaoEmDias(dataTermino) {
+const tempoConclusaoEmDias = (dataTermino) => {
     const dataFim = new Date(dataTermino);
-    if (isNaN(dataFim.getTime())) {
-        return false;
-    }
+    if (isNaN(dataFim.getTime())) return false;
     
     const diffMs = dataFim - new Date();
     const totalDias = Math.floor(diffMs / MS_PER_DAY);
-    
     return totalDias <= 30 && totalDias > 0;
-}
+};
 
-function calcularStatusFrequencia(historico) {
+const calcularStatusFrequencia = (historico) => {
     if (!historico?.length) return "---";
     const datas = historico.map(p => new Date(p.data_presenca));
     const ultima = new Date(Math.max(...datas));
     const diff = Math.floor((new Date() - ultima) / MS_PER_DAY);
     return diff >= 14 ? "Muitas Faltas" : "Regular";
-}
+};
 
-// 2. CARREGAR DADOS
+// --- 3. LÓGICA DE DADOS (SUPABASE & RENDER) ---
+
 async function carregarAlunos() {
     const tabela = document.getElementById('corpo-tabela');
     if (!tabela) return;
@@ -84,7 +82,6 @@ async function carregarAlunos() {
         const freqStatus = calcularStatusFrequencia(aluno.frequencia);
         const presencaHoje = (aluno.frequencia || []).find(p => p.data_presenca === hoje);
         const tarefasPendentes = (aluno.tarefas || []).filter(t => !t.concluida).length;
-        
         const ordenado = (aluno.frequencia || []).sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca));
         const ultimaData = ordenado[0]?.data_presenca || "---";
 
@@ -98,23 +95,18 @@ async function carregarAlunos() {
                     (aluno.rematricula === 'no' ? 
                         `<button onclick="marcarRematricula(${aluno.id})" class="no">Aguardando Rematrícula</button>` :
                         `<button onclick="desmarcarRematricula(${aluno.id})" class="yes">Rematrícula OK</button>`
-                    ) : 
-                    calcularTempoConclusao(aluno.data_termino)
+                    ) : calcularTempoConclusao(aluno.data_termino)
                 }
             </td>
             <td>${formatarDataBR(ultimaData)}</td>
-<td class="status-frequencia ${freqStatus === 'Muitas Faltas' ? 'muitas-faltas' : ''}">
-    ${freqStatus === 'Muitas Faltas' ? 
-        (aluno.contato_f === 'no' || !aluno.contato_f ? 
-            `<button onclick="marcarContatoFaltas(${aluno.id})" class="no">
-                Muitas Faltas
-            </button>` :
-            `<button onclick="desmarcarContatoFaltas(${aluno.id})" class="yes">
-                Contato Feito
-            </button>`
-        ) : freqStatus
-    }
-</td>
+            <td class="status-frequencia ${freqStatus === 'Muitas Faltas' ? 'muitas-faltas' : ''}">
+                ${freqStatus === 'Muitas Faltas' ? 
+                    (aluno.contato_f === 'no' || !aluno.contato_f ? 
+                        `<button onclick="marcarContatoFaltas(${aluno.id})" class="no">Muitas Faltas</button>` :
+                        `<button onclick="desmarcarContatoFaltas(${aluno.id})" class="yes">Contato Feito</button>`
+                    ) : freqStatus
+                }
+            </td>
             <td>${aluno.certificado_premium}</td>
             <td>
                 <div class="operacoes">
@@ -142,74 +134,19 @@ async function carregarAlunos() {
     tabela.appendChild(fragmento);
 }
 
-// 3. LOGICA DE INICIALIZAÇÃO E AUTO-SELEÇÃO
-document.addEventListener('DOMContentLoaded', () => {
-    const agora = new Date();
-    const hora = agora.getHours();
-    const diaSemana = agora.getDay(); // 0 = Domingo, 1 = Segunda...
-
-    const selectTurma = document.getElementById('turma');
-    const selectDia = document.getElementById('dia');
-
-    // Seleção automática de Turno
-    if (selectTurma) {
-        selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
-    }
-
-    // Seleção automática de Dia
-    const mapaDias = {
-        1: 'segunda',
-        2: 'segunda',
-        3: 'quarta',
-        4: 'quarta',
-        5: 'sexta',
-        6: 'sabado'
-    };
-
-    if (selectDia) {
-        selectDia.value = mapaDias[diaSemana] || 'todos';
-    }
-
-    carregarAlunos();
-
-    ['turma', 'dia', 'pesquisa'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', carregarAlunos);
-    });
-});
-
-// --- 4. AÇÕES GLOBAIS ---
+// --- 4. AÇÕES GLOBAIS (WINDOW) ---
 
 window.marcarPresenca = async (id) => {
     const hoje = new Date().toISOString().split('T')[0];
-
-    const { error: erroPresenca } = await _supabase
-        .from('frequencia')
-        .insert([
-            { aluno_id: id, data_presenca: hoje }
-        ]);
+    const { error: erroPresenca } = await _supabase.from('frequencia').insert([{ aluno_id: id, data_presenca: hoje }]);
 
     if (erroPresenca) {
-        if (erroPresenca.code === '23505') {
-            Swal.fire('Atenção', 'Presença de hoje já foi marcada!', 'info');
-        } else {
-            Swal.fire('Erro', 'Erro ao marcar presença.', 'error');
-        }
+        const msg = erroPresenca.code === '23505' ? 'Presença de hoje já foi marcada!' : 'Erro ao marcar presença.';
+        Swal.fire('Atenção', msg, erroPresenca.code === '23505' ? 'info' : 'error');
         return;
     }
 
-    // Ao marcar presença, libera o "slot" de contato_f para uso futuro
-    const { error: erroContato } = await _supabase
-        .from('alunos')
-        .update({ contato_f: 'no' })
-        .eq('id', id);   // <- importantíssimo
-
-    if (erroContato) {
-        console.error(erroContato);
-        // opcional: pode mostrar um alerta
-        // Swal.fire('Erro', 'Presença marcada, mas não foi possível atualizar o status de contato.', 'warning');
-    }
-
+    await _supabase.from('alunos').update({ contato_f: 'no' }).eq('id', id);
     carregarAlunos();
 };
 
@@ -219,8 +156,6 @@ window.desmarcarPresenca = (presencaId) => {
         text: "O registro de hoje será removido.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
         confirmButtonText: 'Sim, desmarcar'
     }).then(async (result) => {
         if (result.isConfirmed) {
@@ -252,163 +187,139 @@ window.abrirModalCadastro = () => abrirModalCadastro(_supabase, carregarAlunos);
 window.concluirTarefa = async (idTarefa, alunoId) => {
     const { error } = await _supabase.from('tarefas').update({ concluida: true }).eq('id', idTarefa);
     if (!error) {
-        const m = document.getElementById('modal-tarefas');
-        if (m) m.remove();
+        document.getElementById('modal-tarefas')?.remove();
         abrirModalTarefas(alunoId, _supabase);
     }
 };
 
 window.deletarTarefa = async (idTarefa, alunoId) => {
-    Swal.fire({
-        title: 'Excluir tarefa?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sim, excluir'
-    }).then(async (result) => {
+    Swal.fire({ title: 'Excluir tarefa?', icon: 'question', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
             const { error } = await _supabase.from('tarefas').delete().eq('id', idTarefa);
             if (!error) {
-                const m = document.getElementById('modal-tarefas');
-                if (m) m.remove();
+                document.getElementById('modal-tarefas')?.remove();
                 abrirModalTarefas(alunoId, _supabase);
             }
         }
     });
 };
 
-window.marcarRematricula = (id) => {
-    if (!id || isNaN(id)) {
-        Swal.fire('Erro!', 'ID do aluno inválido!', 'error');
-        return;
-    }
-
-    Swal.fire({
-        title: 'Confirmar Ação',
-        text: 'Confirmar rematrícula do aluno?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Marcar Rematrícula'
-    }).then(async (result) => {
+window.marcarRematricula = async (id) => {
+    Swal.fire({ title: 'Confirmar rematrícula?', icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
-            const { error } = await _supabase
-                .from('alunos')
-                .update({ rematricula: 'yes' })
-                .eq('id', id);
-
-            if (error) {
-                console.error('Erro:', error);
-                Swal.fire('Erro!', error.message, 'error');
-            } else {
-                carregarAlunos();
-                Swal.fire('Sucesso!', 'Rematrícula confirmada com sucesso!', 'success');
-            }
+            const { error } = await _supabase.from('alunos').update({ rematricula: 'yes' }).eq('id', id);
+            error ? Swal.fire('Erro!', error.message, 'error') : carregarAlunos();
         }
     });
 };
 
-window.desmarcarRematricula = (id) => {
-    if (!id || isNaN(id)) {
-        Swal.fire('Erro!', 'ID do aluno inválido!', 'error');
-        return;
-    }
-
-    Swal.fire({
-        title: 'Confirmar Ação',
-        text: 'Desmarcar a rematrícula do aluno?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sim!',
-        confirmButtonColor: '#dc3545'
-    }).then(async (result) => {
+window.desmarcarRematricula = async (id) => {
+    Swal.fire({ title: 'Desmarcar rematrícula?', icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
-            const { data: aluno } = await _supabase
-                .from('alunos')
-                .select('rematricula')
-                .eq('id', id)
-                .single();
-
-            const novoStatus = aluno.rematricula === 'yes' ? 'no' : 'yes';
-
-            const { error } = await _supabase
-                .from('alunos')
-                .update({ rematricula: novoStatus })
-                .eq('id', id);
-
-            if (error) {
-                console.error('Erro:', error);
-                Swal.fire('Erro!', error.message, 'error');
-            } else {
-                carregarAlunos();
-                Swal.fire('Sucesso!', `Rematrícula desmarcada!`, 'success');
-            }
+            const { data } = await _supabase.from('alunos').select('rematricula').eq('id', id).single();
+            const novoStatus = data.rematricula === 'yes' ? 'no' : 'yes';
+            await _supabase.from('alunos').update({ rematricula: novoStatus }).eq('id', id);
+            carregarAlunos();
         }
     });
 };
 
 window.marcarContatoFaltas = (id) => {
-    if (!id || isNaN(id)) {
-        Swal.fire('Erro!', 'ID inválido!', 'error');
-        return;
-    }
-
-    Swal.fire({
-        title: 'Contato realizado?',
-        text: 'Contato com o aluno de muitas faltas foi feito?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sim, contatei!'
-    }).then(async (result) => {
+    Swal.fire({ title: 'Contato realizado?', icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
-            const { error } = await _supabase
-                .from('alunos')
-                .update({ contato_f: 'yes' })   // <- coluna contato_f
-                .eq('id', id);
-
-            if (error) {
-                Swal.fire('Erro!', error.message, 'error');
-            } else {
-                carregarAlunos();
-                Swal.fire('Sucesso!', 'Contato marcado como feito!', 'success');
-            }
+            await _supabase.from('alunos').update({ contato_f: 'yes' }).eq('id', id);
+            carregarAlunos();
         }
     });
 };
 
 window.desmarcarContatoFaltas = (id) => {
-    if (!id || isNaN(id)) {
-        Swal.fire('Erro!', 'ID inválido!', 'error');
-        return;
-    }
-
-    Swal.fire({
-        title: 'Desmarcar contato?',
-        text: 'Deseja voltar o status para "Muitas Faltas" sem contato?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Desmarcar',
-        confirmButtonColor: '#dc3545'
-    }).then(async (result) => {
+    Swal.fire({ title: 'Desmarcar contato?', icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
-            const { error } = await _supabase
-                .from('alunos')
-                .update({ contato_f: 'no' })   // <- coluna contato_f
-                .eq('id', id);
-
-            if (error) {
-                Swal.fire('Erro!', error.message, 'error');
-            } else {
-                carregarAlunos();
-                Swal.fire('Sucesso!', 'Contato desmarcado!', 'success');
-            }
+            await _supabase.from('alunos').update({ contato_f: 'no' }).eq('id', id);
+            carregarAlunos();
         }
     });
 };
 
-// 5. INICIALIZAÇÃO
-document.addEventListener('DOMContentLoaded', () => {
-    carregarAlunos();
-    ['turma', 'dia', 'pesquisa'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', carregarAlunos);
+// --- 5. RELATÓRIOS (PDF) ---
+
+const gerarTabelaPDF = (titulo, colunas, linhas, nomeArquivo, corDestaque) => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text(`RPS-TSI | ${titulo}`, 14, 15);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Relatório extraído em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 22);
+    doc.autoTable({
+        startY: 30,
+        head: [colunas],
+        body: linhas,
+        headStyles: { fillColor: corDestaque },
+        theme: 'striped',
+        styles: { font: "helvetica", fontSize: 9 },
     });
+    doc.save(`${nomeArquivo}_${new Date().getTime()}.pdf`);
+};
+
+// --- 6. INICIALIZAÇÃO DA INTERFACE ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    const agora = new Date();
+    const hora = agora.getHours();
+    const diaSemana = agora.getDay();
+
+    const selectTurma = document.getElementById('turma');
+    const selectDia = document.getElementById('dia');
+    const btnTermino = document.getElementById('btnTermino');
+    const btnFaltas = document.getElementById('btnFaltas');
+
+    // Auto-seleção de filtros
+    if (selectTurma) selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
+    const mapaDias = { 1: 'segunda', 2: 'segunda', 3: 'quarta', 4: 'quarta', 5: 'sexta', 6: 'sabado' };
+    if (selectDia) selectDia.value = mapaDias[diaSemana] || 'todos';
+
+    // Eventos de Filtro
+    ['turma', 'dia', 'pesquisa'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', carregarAlunos);
+    });
+
+    // Relatório Término
+    btnTermino?.addEventListener('click', async () => {
+        const hoje = new Date().toISOString().split('T')[0];
+        const limite = new Date();
+        limite.setDate(new Date().getDate() + 29);
+        const dataLimite = limite.toISOString().split('T')[0];
+
+        const { data, error } = await _supabase.from('alunos')
+            .select('nome, turma, dia_aula, data_termino')
+            .gte('data_termino', hoje)
+            .lte('data_termino', dataLimite)
+            .order('data_termino', { ascending: true });
+
+        if (data?.length > 0) {
+            const linhas = data.map(a => [a.nome.toUpperCase(), a.turma, a.dia_aula, formatarDataBR(a.data_termino)]);
+            gerarTabelaPDF("Alunos Próximos ao Término", ["Nome", "Turma", "Dia", "Término"], linhas, "termino", [0, 0, 0]);
+        } else {
+            Swal.fire('Aviso', 'Nenhum aluno termina nos próximos 29 dias.', 'info');
+        }
+    });
+
+    // Relatório Faltas
+    btnFaltas?.addEventListener('click', async () => {
+        const { data } = await _supabase.from('alunos').select('nome, turma, dia_aula, frequencia(data_presenca)');
+        const filtrados = data.filter(a => calcularStatusFrequencia(a.frequencia) === "Muitas Faltas").map(a => {
+            const datas = a.frequencia.map(f => new Date(f.data_presenca));
+            const ultima = datas.length ? new Date(Math.max(...datas)).toISOString().split('T')[0] : null;
+            return [a.nome.toUpperCase(), a.turma, a.dia_aula, ultima ? formatarDataBR(ultima) : "Sem Registro"];
+        });
+
+        filtrados.length ? 
+            gerarTabelaPDF("Relatório de Evasão", ["Nome", "Turma", "Dia", "Última Presença"], filtrados, "faltas", [0, 0, 0]) : 
+            Swal.fire('Ótima notícia', 'Nenhum aluno com faltas críticas!', 'success');
+    });
+
+    carregarAlunos();
 });

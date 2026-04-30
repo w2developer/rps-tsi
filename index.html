@@ -63,8 +63,19 @@
             </div>
         </div>
         
-        <div class="pesquisa">
-            <input type="text" id="pesquisa" placeholder="Pesquisar aluno...">
+        <div class="section-pesquisa-relatorios">
+            <div class="pesquisa">
+                <input type="text" id="pesquisa" placeholder="Pesquisar aluno...">
+            </div>
+            <div class="acoes-relatorio">
+                <button id="btnTermino" class="btn-pdf btn-termino">
+                    Alunos com Término Proximo (PDF)
+                </button>
+
+                <button id="btnFaltas" class="btn-pdf btn-falta">
+                    Relatório de Faltas Críticas (PDF)
+                </button>
+            </div>
         </div>
         
         <table class="listagem">
@@ -93,5 +104,7 @@
         </table>
     </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>

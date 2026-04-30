@@ -23,15 +23,29 @@ body {
     overflow-x: auto;
 }
 
+.section-pesquisa-relatorios {
+    display: flex;
+    margin: 1rem 0rem 0rem 0rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .pesquisa {
-    margin: 1rem 0;
     display: flex;
     justify-content: start;
 }
 .pesquisa input {
     width: 250px;
-    padding: .5rem .8rem;
     border-radius: 4px;
+    padding: .5rem .8rem;
     border: 1px solid #ccc;
 }
 
+.acoes-relatorio button {
+    padding: .5rem .8rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background-color: #10172A;
+    color: #fff;
+}
