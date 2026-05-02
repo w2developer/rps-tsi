@@ -24,9 +24,10 @@ body {
 }
 
 .section-pesquisa-relatorios {
+    gap: 10px;
     display: flex;
-    margin: 1rem 0rem 0rem 0rem;
     align-items: center;
+    margin: 1rem 0rem 0rem 0rem;
     justify-content: space-between;
 }
 
@@ -42,10 +43,22 @@ body {
 }
 
 .acoes-relatorio button {
-    padding: .5rem .8rem;
-    border-radius: 4px;
     border: none;
     cursor: pointer;
-    background-color: #10172A;
-    color: #fff;
+    color: #000000;
+    border-radius: 4px;
+    padding: .5rem .8rem;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+}
+
+@media (max-width: 825px) {
+    .section-pesquisa-relatorios {
+        flex-direction: column;
+    }
+}
+@media (max-width: 550px) {
+    body {
+        display: none;
+    }
 }

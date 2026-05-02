@@ -22,16 +22,29 @@
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // Verifica se existe um usuário no sessionStorage
+        const usuarioAtivo = sessionStorage.getItem('usuario_logado');
+
+        if (!usuarioAtivo) {
+            // Se não estiver logado, manda de volta para o login
+            window.location.href = '/pages/login.html';
+        }
+    </script>
 </head>
 <body>
     <header>
-        <h1><a href="/index.html">RPS</a></h1>
         <nav>
             <ul>
                 <li><a href="/" class="active-menu">Pagina Inicial</a></li>
                 <li><a href="/pages/doc.html">Documentação</a></li>
             </ul>
         </nav>
+        <div class="logout">
+            <span id="usuario-logado" style="color: #fff;"></span>
+            <button id="logout-button">Sair</button>
+        </div>
     </header>
 
     <div class="container">
@@ -106,5 +119,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const usuarioLogadoSpan = document.getElementById('usuario-logado');
+    const logoutButton = document.getElementById('logout-button');
+
+    // 1. Recupera os dados salvos no login
+    const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
+
+    // 2. Exibe o nome do usuário se ele existir
+    if (usuarioAtivo && usuarioLogadoSpan) {
+        usuarioLogadoSpan.textContent = `${usuarioAtivo.nome}`;
+    }
+
+    // 3. Função de Logout
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            // Remove os dados da sessão
+            sessionStorage.removeItem('usuario_logado');
+            
+            // Redireciona para a página de login
+            // Como o index está na raiz e o login em pages/, o caminho é 'pages/login.html'
+            window.location.href = 'pages/login.html';
+        });
+    }
+});
+</script>
 </body>
 </html>

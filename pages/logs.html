@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs do Sistema - RPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 20px; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #10172A; display: flex; align-items: center; gap: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.9rem; }
+        th { background-color: #10172A; color: white; }
+        tr:hover { background-color: #f9f9f9; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .acao-login { background: #d4edda; color: #155724; }
+        .acao-excluir { background: #f8d7da; color: #721c24; }
+        .btn-voltar { text-decoration: none; color: #10172A; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 20px; }
+        
+        /* Estilos da Paginação */
+        .pagination { margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+        .btn-pag { padding: 8px 16px; border: 1px solid #10172A; background: white; cursor: pointer; border-radius: 4px; transition: 0.3s; }
+        .btn-pag:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+        .btn-pag:not(:disabled):hover { background: #10172A; color: white; }
+        #page-info { font-weight: bold; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" class="btn-voltar"><i class="ri-arrow-left-line"></i> Voltar ao Início</a>
+
+    <div class="container">
+        <h2><i class="ri-history-line"></i> Histórico de Alterações (Logs)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Tabela</th>
+                    <th>Detalhes</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-logs">
+                <!-- Preenchido via JS -->
+            </tbody>
+        </table>
+
+        <!-- Controles de Paginação -->
+        <div class="pagination">
+            <button id="prev" class="btn-pag" disabled><i class="ri-arrow-left-s-line"></i> Anterior</button>
+            <span id="page-info">Página 1</span>
+            <button id="next" class="btn-pag">Próximo <i class="ri-arrow-right-s-line"></i></button>
+        </div>
+    </div>
+
+    <script type="module">
+        const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
+        const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let paginaAtual = 0;
+        const itensPorPagina = 50;
+
+        async function carregarLogs(pagina) {
+            const de = pagina * itensPorPagina;
+            const ate = de + itensPorPagina - 1;
+
+            const { data: logs, error, count } = await _supabase
+                .from('logs')
+                .select('*', { count: 'exact' })
+                .order('data_hora', { ascending: false })
+                .range(de, ate);
+
+            if (error) return console.error('Erro ao carregar logs:', error);
+
+            // Renderizar tabela
+            const corpo = document.getElementById('corpo-logs');
+            corpo.innerHTML = logs.map(log => `
+                <tr>
+                    <td>${new Date(log.data_hora).toLocaleString('pt-BR')}</td>
+                    <td><strong>${log.usuario}</strong></td>
+                    <td><span class="badge acao-${log.acao?.toLowerCase() || 'default'}">${log.acao}</span></td>
+                    <td>${log.tabela}</td>
+                    <td><small>${JSON.stringify(log.detalhes)}</small></td>
+                </tr>
+            `).join('');
+
+            // Atualizar controles
+            document.getElementById('page-info').innerText = `Página ${pagina + 1}`;
+            document.getElementById('prev').disabled = (pagina === 0);
+            document.getElementById('next').disabled = (ate >= count - 1);
+        }
+
+        // Eventos dos botões
+        document.getElementById('prev').addEventListener('click', () => {
+            if (paginaAtual > 0) {
+                paginaAtual--;
+                carregarLogs(paginaAtual);
+            }
+        });
+
+        document.getElementById('next').addEventListener('click', () => {
+            paginaAtual++;
+            carregarLogs(paginaAtual);
+        });
+
+        // Segurança e inicialização
+        if (!sessionStorage.getItem('usuario_logado')) {
+            window.location.href = 'login.html';
+        } else {
+            carregarLogs(paginaAtual);
+        }
+    </script>
+</body>
+</html>

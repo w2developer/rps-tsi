@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - RPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #34495e; color: white; }
+        .btn-add { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-edit { color: #2980b9; cursor: pointer; border: none; background: none; font-size: 1.2rem; }
+        .btn-delete { color: #c0392b; cursor: pointer; border: none; background: none; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2><i class="ri-admin-line"></i> Gestão de Colaboradores</h2>
+    <div>
+        <span id="nome-admin"></span>
+        <button onclick="logout()" style="margin-left:15px; background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Sair</button>
+    </div>
+</div>
+
+<div class="container">
+    <button class="btn-add" onclick="modalColaborador()"><i class="ri-user-add-line"></i> Novo Colaborador</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Código de Acesso</th>
+                <th>Cargo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="lista-colaboradores"></tbody>
+    </table>
+</div>
+
+<script type="module">
+    const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
+    const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
+    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Proteção da página
+    const user = JSON.parse(sessionStorage.getItem('usuario_logado'));
+    if (!user || user.cargo !== 'admin') window.location.href = 'login.html';
+    document.getElementById('nome-admin').textContent = `${user.nome}`;
+
+    async function carregarColaboradores() {
+        const { data, error } = await _supabase.from('usuarios').select('*').order('nome');
+        if (error) return;
+
+        const html = data.map(c => `
+            <tr>
+                <td>${c.nome}</td>
+                <td><code>${c.codigo_acesso}</code></td>
+                <td>${c.cargo}</td>
+                <td>
+                    <button class="btn-edit" onclick="modalColaborador(${c.id}, '${c.nome}', '${c.codigo_acesso}', '${c.cargo}')"><i class="ri-edit-box-line"></i></button>
+                    <button class="btn-delete" onclick="excluirColaborador(${c.id}, '${c.nome}')"><i class="ri-delete-bin-line"></i></button>
+                </td>
+            </tr>
+        `).join('');
+        document.getElementById('lista-colaboradores').innerHTML = html;
+    }
+
+    window.modalColaborador = async (id = null, nome = '', codigo = '', cargo = 'colaborador') => {
+        const { value: formValues } = await Swal.fire({
+            title: id ? 'Editar Colaborador' : 'Novo Colaborador',
+            html: `
+                <input id="swal-nome" class="swal2-input" placeholder="Nome" value="${nome}">
+                <input id="swal-codigo" class="swal2-input" placeholder="Código de Acesso" value="${codigo}">
+                <select id="swal-cargo" class="swal2-input">
+                    <option value="colaborador" ${cargo === 'colaborador' ? 'selected' : ''}>Colaborador</option>
+                    <option value="admin" ${cargo === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+            `,
+            focusConfirm: false,
+            preConfirm: () => {
+                return {
+                    nome: document.getElementById('swal-nome').value,
+                    codigo_acesso: document.getElementById('swal-codigo').value,
+                    cargo: document.getElementById('swal-cargo').value
+                }
+            }
+        });
+
+        if (formValues) {
+            if (id) {
+                await _supabase.from('usuarios').update(formValues).eq('id', id);
+            } else {
+                await _supabase.from('usuarios').insert([formValues]);
+            }
+            carregarColaboradores();
+        }
+    };
+
+    window.excluirColaborador = (id, nome) => {
+        if (id === user.id) return Swal.fire('Erro', 'Você não pode excluir a si mesmo!', 'error');
+        
+        Swal.fire({
+            title: `Excluir ${nome}?`,
+            text: "Esta ação não pode ser desfeita!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, excluir'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await _supabase.from('usuarios').delete().eq('id', id);
+                carregarColaboradores();
+            }
+        });
+    };
+
+    window.logout = () => {
+        sessionStorage.removeItem('usuario_logado');
+        window.location.href = 'login.html';
+    };
+
+    carregarColaboradores();
+</script>
+</body>
+</html>

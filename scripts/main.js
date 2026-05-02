@@ -9,7 +9,30 @@ const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// --- 2. FUNÇÕES DE APOIO (UTILITÁRIOS) ---
+// --- 2. SISTEMA DE LOG (AUDITORIA) ---
+
+/**
+ * Registra qualquer alteração no banco de dados na tabela de logs.
+ * @param {string} acao - O que foi feito (Ex: EXCLUIR ALUNO)
+ * @param {string} tabela - Tabela afetada
+ * @param {object} detalhes - Informações extras para auditoria
+ */
+async function registrarLog(acao, tabela, detalhes = {}) {
+    const usuario = JSON.parse(sessionStorage.getItem('usuario_logado'));
+    
+    await _supabase.from('logs').insert([{
+        usuario: usuario ? usuario.nome : "Desconhecido",
+        acao: acao.toUpperCase(),
+        tabela: tabela.toLowerCase(),
+        detalhes: {
+            ...detalhes,
+            cargo_autor: usuario ? usuario.cargo : "N/A",
+            horario_local: new Date().toLocaleString('pt-BR')
+        }
+    }]);
+}
+
+// --- 3. FUNÇÕES DE APOIO (UTILITÁRIOS) ---
 
 const formatarDataBR = (dataISO) => {
     if (!dataISO || dataISO === "---") return "---";
@@ -46,7 +69,7 @@ const calcularStatusFrequencia = (historico) => {
     return diff >= 14 ? "Muitas Faltas" : "Regular";
 };
 
-// --- 3. LÓGICA DE DADOS (SUPABASE & RENDER) ---
+// --- 4. LÓGICA DE DADOS (SUPABASE & RENDER) ---
 
 async function carregarAlunos() {
     const tabela = document.getElementById('corpo-tabela');
@@ -93,8 +116,8 @@ async function carregarAlunos() {
             <td class="${tempoConclusaoEmDias(aluno.data_termino) ? 'rematricula' : ''}">
                 ${tempoConclusaoEmDias(aluno.data_termino) ? 
                     (aluno.rematricula === 'no' ? 
-                        `<button onclick="marcarRematricula(${aluno.id})" class="no">Aguardando Rematrícula</button>` :
-                        `<button onclick="desmarcarRematricula(${aluno.id})" class="yes">Rematrícula OK</button>`
+                        `<button onclick="marcarRematricula(${aluno.id}, '${aluno.nome}')" class="no">Aguardando Rematrícula</button>` :
+                        `<button onclick="desmarcarRematricula(${aluno.id}, '${aluno.nome}')" class="yes">Rematrícula OK</button>`
                     ) : calcularTempoConclusao(aluno.data_termino)
                 }
             </td>
@@ -102,8 +125,8 @@ async function carregarAlunos() {
             <td class="status-frequencia ${freqStatus === 'Muitas Faltas' ? 'muitas-faltas' : ''}">
                 ${freqStatus === 'Muitas Faltas' ? 
                     (aluno.contato_f === 'no' || !aluno.contato_f ? 
-                        `<button onclick="marcarContatoFaltas(${aluno.id})" class="no">Muitas Faltas</button>` :
-                        `<button onclick="desmarcarContatoFaltas(${aluno.id})" class="yes">Contato Feito</button>`
+                        `<button onclick="marcarContatoFaltas(${aluno.id}, '${aluno.nome}')" class="no">Muitas Faltas</button>` :
+                        `<button onclick="desmarcarContatoFaltas(${aluno.id}, '${aluno.nome}')" class="yes">Contato Feito</button>`
                     ) : freqStatus
                 }
             </td>
@@ -111,7 +134,7 @@ async function carregarAlunos() {
             <td>
                 <div class="operacoes">
                     <button class="btn-presenca" title="${presencaHoje ? 'Desmarcar' : 'Marcar'}" 
-                        onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id})` : `marcarPresenca(${aluno.id})`}"
+                        onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id}, ${aluno.id}, '${aluno.nome}')` : `marcarPresenca(${aluno.id}, '${aluno.nome}')`}"
                         style="${presencaHoje ? 'background-color: #28a745;' : ''}">
                         <i class="${presencaHoje ? 'ri-check-double-line' : 'ri-check-line'}"></i>
                     </button>
@@ -119,7 +142,7 @@ async function carregarAlunos() {
                         <i class="ri-survey-fill"></i>
                         ${tarefasPendentes > 0 ? `<span class="badge">${tarefasPendentes}</span>` : ''}
                     </button>
-                    <button class="btn-excluir" onclick="excluirAluno(${aluno.id})">
+                    <button class="btn-excluir" onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
                         <i class="ri-delete-bin-fill"></i>
                     </button>
                     <button class="btn-editar" onclick="editarAluno(${aluno.id})">
@@ -134,9 +157,9 @@ async function carregarAlunos() {
     tabela.appendChild(fragmento);
 }
 
-// --- 4. AÇÕES GLOBAIS (WINDOW) ---
+// --- 5. AÇÕES GLOBAIS (WINDOW) ---
 
-window.marcarPresenca = async (id) => {
+window.marcarPresenca = async (id, nome) => {
     const hoje = new Date().toISOString().split('T')[0];
     const { error: erroPresenca } = await _supabase.from('frequencia').insert([{ aluno_id: id, data_presenca: hoje }]);
 
@@ -147,46 +170,62 @@ window.marcarPresenca = async (id) => {
     }
 
     await _supabase.from('alunos').update({ contato_f: 'no' }).eq('id', id);
+    
+    await registrarLog('MARCAR_PRESENCA', 'frequencia', { aluno: nome, aluno_id: id, data: hoje });
     carregarAlunos();
 };
 
-window.desmarcarPresenca = (presencaId) => {
+window.desmarcarPresenca = (presencaId, alunoId, nome) => {
     Swal.fire({
         title: 'Desmarcar?',
-        text: "O registro de hoje será removido.",
+        text: `O registro de hoje para ${nome} será removido.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, desmarcar'
     }).then(async (result) => {
         if (result.isConfirmed) {
             const { error } = await _supabase.from('frequencia').delete().eq('id', presencaId);
-            if (!error) carregarAlunos();
+            if (!error) {
+                await registrarLog('DESMARCAR_PRESENCA', 'frequencia', { aluno: nome, aluno_id: alunoId });
+                carregarAlunos();
+            }
         }
     });
 };
 
-window.excluirAluno = (id) => {
+window.excluirAluno = (id, nome) => {
     Swal.fire({
         title: 'Confirmar Exclusão',
-        text: 'Deseja excluir o aluno e todo o histórico?',
+        text: `Deseja excluir o aluno ${nome} e todo o histórico?`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, excluir!'
     }).then(async (result) => {
         if (result.isConfirmed) {
             await _supabase.from('alunos').delete().eq('id', id);
+            await registrarLog('EXCLUIR_ALUNO', 'alunos', { aluno_deletado: nome, id_deletado: id });
             carregarAlunos();
         }
     });
 };
 
 window.verTarefas = id => abrirModalTarefas(id, _supabase);
-window.editarAluno = id => abrirModalEdicao(id, _supabase, carregarAlunos);
-window.abrirModalCadastro = () => abrirModalCadastro(_supabase, carregarAlunos);
+
+// Para cadastros e edições, o log deve ser inserido dentro dos componentes ou após o retorno da função.
+window.editarAluno = id => abrirModalEdicao(id, _supabase, async () => {
+    await registrarLog('EDITAR_ALUNO', 'alunos', { aluno_id: id });
+    carregarAlunos();
+});
+
+window.abrirModalCadastro = () => abrirModalCadastro(_supabase, async () => {
+    await registrarLog('CADASTRAR_ALUNO', 'alunos', { info: 'Novo aluno adicionado' });
+    carregarAlunos();
+});
 
 window.concluirTarefa = async (idTarefa, alunoId) => {
     const { error } = await _supabase.from('tarefas').update({ concluida: true }).eq('id', idTarefa);
     if (!error) {
+        await registrarLog('CONCLUIR_TAREFA', 'tarefas', { tarefa_id: idTarefa, aluno_id: alunoId });
         document.getElementById('modal-tarefas')?.remove();
         abrirModalTarefas(alunoId, _supabase);
     }
@@ -197,6 +236,7 @@ window.deletarTarefa = async (idTarefa, alunoId) => {
         if (result.isConfirmed) {
             const { error } = await _supabase.from('tarefas').delete().eq('id', idTarefa);
             if (!error) {
+                await registrarLog('DELETAR_TAREFA', 'tarefas', { tarefa_id: idTarefa, aluno_id: alunoId });
                 document.getElementById('modal-tarefas')?.remove();
                 abrirModalTarefas(alunoId, _supabase);
             }
@@ -204,45 +244,53 @@ window.deletarTarefa = async (idTarefa, alunoId) => {
     });
 };
 
-window.marcarRematricula = async (id) => {
-    Swal.fire({ title: 'Confirmar rematrícula?', icon: 'warning', showCancelButton: true }).then(async (result) => {
+window.marcarRematricula = async (id, nome) => {
+    Swal.fire({ title: `Confirmar rematrícula de ${nome}?`, icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
             const { error } = await _supabase.from('alunos').update({ rematricula: 'yes' }).eq('id', id);
-            error ? Swal.fire('Erro!', error.message, 'error') : carregarAlunos();
+            if (!error) {
+                await registrarLog('MARCAR_REMATRICULA', 'alunos', { aluno: nome, status: 'YES' });
+                carregarAlunos();
+            } else {
+                Swal.fire('Erro!', error.message, 'error');
+            }
         }
     });
 };
 
-window.desmarcarRematricula = async (id) => {
-    Swal.fire({ title: 'Desmarcar rematrícula?', icon: 'warning', showCancelButton: true }).then(async (result) => {
+window.desmarcarRematricula = async (id, nome) => {
+    Swal.fire({ title: `Desmarcar rematrícula de ${nome}?`, icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
             const { data } = await _supabase.from('alunos').select('rematricula').eq('id', id).single();
             const novoStatus = data.rematricula === 'yes' ? 'no' : 'yes';
             await _supabase.from('alunos').update({ rematricula: novoStatus }).eq('id', id);
+            await registrarLog('ALTERAR_REMATRICULA', 'alunos', { aluno: nome, novo_status: novoStatus });
             carregarAlunos();
         }
     });
 };
 
-window.marcarContatoFaltas = (id) => {
-    Swal.fire({ title: 'Contato realizado?', icon: 'warning', showCancelButton: true }).then(async (result) => {
+window.marcarContatoFaltas = (id, nome) => {
+    Swal.fire({ title: `Contato realizado com ${nome}?`, icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
             await _supabase.from('alunos').update({ contato_f: 'yes' }).eq('id', id);
+            await registrarLog('CONTATO_FALTAS', 'alunos', { aluno: nome, status: 'CONTATO_FEITO' });
             carregarAlunos();
         }
     });
 };
 
-window.desmarcarContatoFaltas = (id) => {
-    Swal.fire({ title: 'Desmarcar contato?', icon: 'warning', showCancelButton: true }).then(async (result) => {
+window.desmarcarContatoFaltas = (id, nome) => {
+    Swal.fire({ title: `Desmarcar contato de ${nome}?`, icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
             await _supabase.from('alunos').update({ contato_f: 'no' }).eq('id', id);
+            await registrarLog('REVERTER_CONTATO_FALTAS', 'alunos', { aluno: nome });
             carregarAlunos();
         }
     });
 };
 
-// --- 5. RELATÓRIOS (PDF) ---
+// --- 6. RELATÓRIOS (PDF) ---
 
 const gerarTabelaPDF = (titulo, colunas, linhas, nomeArquivo, corDestaque) => {
     const { jsPDF } = window.jspdf;
@@ -261,10 +309,14 @@ const gerarTabelaPDF = (titulo, colunas, linhas, nomeArquivo, corDestaque) => {
         theme: 'striped',
         styles: { font: "helvetica", fontSize: 9 },
     });
+    
+    // Log da extração do PDF
+    registrarLog('GERAR_RELATORIO', 'sistema', { tipo: titulo });
+    
     doc.save(`${nomeArquivo}_${new Date().getTime()}.pdf`);
 };
 
-// --- 6. INICIALIZAÇÃO DA INTERFACE ---
+// --- 7. INICIALIZAÇÃO DA INTERFACE ---
 
 document.addEventListener('DOMContentLoaded', () => {
     const agora = new Date();

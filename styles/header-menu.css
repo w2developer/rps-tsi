@@ -1,6 +1,6 @@
 header {
     display: flex;
-    padding: 10px 10px;
+    padding: 16px 10px;
     align-items: center;
     background-color: #10172A;
     justify-content: space-between;
@@ -14,8 +14,15 @@ header h1 a {
     text-decoration: none;
 }
 
+header nav {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
 header nav ul {
     gap: 20px;
+    padding: 0;
     display: flex;
     font-size: 1rem;
     margin-right: 20px;
@@ -49,4 +56,20 @@ header nav a.active-menu:hover::after {
 }
 header nav a.active-menu::after {
     width: 100%;
+}
+
+.logout {
+    gap: 10px;
+    display: flex;
+    margin-right: 10px;
+    align-items: center;
+}
+
+.logout button {
+    border: none;
+    color: #000000;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: .2rem .6rem;
+    background-color: #ffffff;
 }
