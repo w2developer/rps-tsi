@@ -108,6 +108,11 @@ async function carregarAlunos() {
         const ordenado = (aluno.frequencia || []).sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca));
         const ultimaData = ordenado[0]?.data_presenca || "---";
 
+        // Lógica para mostrar "Presente Hoje" em verde
+        const exibirUltimaPresenca = (ultimaData === hoje) 
+            ? `<span style="color: #28a745; font-weight: bold;">Presente Hoje</span>` 
+            : formatarDataBR(ultimaData);
+
         const tr = document.createElement('tr');
         tr.className = `aluno ${presencaHoje ? 'presente-hoje' : ''}`;
         tr.innerHTML = `
@@ -121,7 +126,7 @@ async function carregarAlunos() {
                     ) : calcularTempoConclusao(aluno.data_termino)
                 }
             </td>
-            <td>${formatarDataBR(ultimaData)}</td>
+            <td>${exibirUltimaPresenca}</td>
             <td class="status-frequencia ${freqStatus === 'Muitas Faltas' ? 'muitas-faltas' : ''}">
                 ${freqStatus === 'Muitas Faltas' ? 
                     (aluno.contato_f === 'no' || !aluno.contato_f ? 
@@ -133,21 +138,30 @@ async function carregarAlunos() {
             <td>${aluno.certificado_premium}</td>
             <td>
                 <div class="operacoes">
-                    <button class="btn-presenca" title="${presencaHoje ? 'Desmarcar' : 'Marcar'}" 
-                        onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id}, ${aluno.id}, '${aluno.nome}')` : `marcarPresenca(${aluno.id}, '${aluno.nome}')`}"
-                        style="${presencaHoje ? 'background-color: #28a745;' : ''}">
-                        <i class="${presencaHoje ? 'ri-check-double-line' : 'ri-check-line'}"></i>
-                    </button>
-                    <button class="btn-tarefas" onclick="verTarefas(${aluno.id})">
-                        <i class="ri-survey-fill"></i>
-                        ${tarefasPendentes > 0 ? `<span class="badge">${tarefasPendentes}</span>` : ''}
-                    </button>
-                    <button class="btn-excluir" onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
-                        <i class="ri-delete-bin-fill"></i>
-                    </button>
-                    <button class="btn-editar" onclick="editarAluno(${aluno.id})">
-                        <i class="ri-edit-fill"></i>
-                    </button>
+                    <div class="dropdown" onclick="toggleDropdown(event, this)">
+                        <button class="dropdown-btn"><i class="ri-menu-line"></i></button>
+                        <div class="dropdown-content">
+                            <button class="btn-presenca" title="${presencaHoje ? 'Desmarcar' : 'Marcar'}" 
+                                onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id}, ${aluno.id}, '${aluno.nome}')` : `marcarPresenca(${aluno.id}, '${aluno.nome}')`}"
+                                style="${presencaHoje ? 'color: #28a745;' : ''}">
+                                <i class="${presencaHoje ? 'ri-check-double-line' : 'ri-check-line'}"></i>
+                                <span>${presencaHoje ? 'Desmarcar' : 'Marcar Presença'}</span>
+                            </button>
+                            <button class="btn-tarefas" onclick="verTarefas(${aluno.id})">
+                                <i class="ri-survey-fill"></i>
+                                <span>Adicionar Tarefa</span>
+                                ${tarefasPendentes > 0 ? `<span class="badge">${tarefasPendentes}</span>` : ''}
+                            </button>
+                            <button class="btn-excluir" onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
+                                <i class="ri-delete-bin-fill"></i>
+                                <span>Excluir Aluno</span>
+                            </button>
+                            <button class="btn-editar" onclick="editarAluno(${aluno.id})">
+                                <i class="ri-edit-fill"></i>
+                                <span>Editar Aluno</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </td>`;
         fragmento.appendChild(tr);
@@ -289,6 +303,26 @@ window.desmarcarContatoFaltas = (id, nome) => {
         }
     });
 };
+
+window.toggleDropdown = (event, dropdown) => {
+    event.stopPropagation(); // Impede clique na tabela
+
+    // Fecha todos os outros dropdowns
+    document.querySelectorAll('.dropdown-content').forEach(dd => {
+        dd.classList.remove('show');
+    });
+
+    // Toggle deste dropdown
+    const content = dropdown.querySelector('.dropdown-content');
+    content.classList.toggle('show');
+}
+
+// Fecha dropdowns quando clica fora
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-content').forEach(dd => {
+        dd.classList.remove('show');
+    });
+});
 
 // --- 6. RELATÓRIOS (PDF) ---
 

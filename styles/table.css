@@ -2,6 +2,7 @@ table {
     width: 100%;
     font-size: .9rem;
     margin-top: 20px;
+    margin-bottom: 180px;
     border-collapse: collapse;
 }
 table th, table td {
@@ -67,18 +68,19 @@ table thead th {
     justify-content: center;
 }
 .operacoes button {
-    border: none;
+    gap: 10px;
     display: flex;
     margin: 0 auto;
     color: white;
     cursor: pointer;
     border-radius: 4px;
     align-items: center;
-    justify-content: center;
+    justify-content: start;
+    border: 1px solid #d8d8d8;
 }
 
 /* Cor diferente para os botões */
-.operacoes .btn-presenca {
+/* .operacoes .btn-presenca {
     background: #6c757d;
 }
 .operacoes .btn-tarefas {
@@ -96,7 +98,7 @@ table thead th {
 }
 .operacoes .btn-editar {
     background: #17a2b8;
-}
+} */
 
 /* Ícones */
 .operacoes i {
@@ -113,7 +115,7 @@ table thead th {
     height: 16px;
     color: white;
     font-size: 0.6rem;
-    position: absolute;
+    /* position: absolute; */
     border-radius: 50%;
     align-items: center;
     justify-content: center;

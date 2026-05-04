@@ -3,6 +3,7 @@
 @import url('./filtros-e-adicionar.css');
 @import url('./modal.css');
 @import url('./custom-sweetalert2.css');
+@import url('./dropdown.css');
 
 * {
     margin: 0;
