@@ -114,6 +114,8 @@ async function carregarAlunos() {
     const { data: alunos, error } = await query;
     if (error) return console.error('Erro:', error.message);
 
+    atualizarContagemPresentes(alunos);
+
     // --- 3. RENDERIZAÇÃO ---
     const hoje = new Date().toISOString().split('T')[0];
     const fragmento = document.createDocumentFragment();
@@ -125,6 +127,10 @@ async function carregarAlunos() {
         const ordenado = (aluno.frequencia || []).sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca));
         const ultimaData = ordenado[0]?.data_presenca || "---";
 
+        const exibirHorario = aluno.horario_estudo && aluno.horario_estudo !== 'Flexível' 
+            ? aluno.horario_estudo 
+            : (aluno.horario_estudo === 'Flexível' ? 'Flexível' : 'SEM HORÁRIO');
+
         const exibirUltimaPresenca = (ultimaData === hoje) 
             ? `<span style="color: #28a745; font-weight: bold;">Presente Hoje</span>` 
             : formatarDataBR(ultimaData);
@@ -132,7 +138,12 @@ async function carregarAlunos() {
         const tr = document.createElement('tr');
         tr.className = `aluno ${presencaHoje ? 'presente-hoje' : ''}`;
         tr.innerHTML = `
-            <td>${aluno.nome}</td>
+            <td>
+                ${aluno.nome}
+                <div style="font-size: 0.75rem; color: #666; margin-top: 2px;">
+                    ${exibirHorario}
+                </div>
+            </td>
             <td>${formatarDataBR(aluno.data_termino)}</td>
             <td class="${tempoConclusaoEmDias(aluno.data_termino) ? 'rematricula' : ''}">
                 ${tempoConclusaoEmDias(aluno.data_termino) ? 
@@ -185,6 +196,28 @@ async function carregarAlunos() {
 
     tabela.innerHTML = '';
     tabela.appendChild(fragmento);
+}
+
+// FUNÇÕES DE APOIO (UTILITÁRIOS)
+
+function atualizarContagemPresentes(alunos) {
+    const spanQtd = document.getElementById('qtd-presente');
+    if (!spanQtd) return;
+
+    const hoje = new Date().toISOString().split('T')[0];
+
+    const totalPresentes = alunos.filter(aluno => {
+        // Ignora flexíveis na contagem
+        if (aluno.horario_estudo === 'Flexível' || aluno.dia_aula === 'Flexível') {
+            return false;
+        }
+
+        // Verifica se existe presença hoje
+        return (aluno.frequencia || []).some(p => p.data_presenca === hoje);
+    }).length;
+
+    // Atualiza o texto do span
+    spanQtd.textContent = totalPresentes > 0 ? `(${totalPresentes})` : '';
 }
 
 // --- 5. AÇÕES GLOBAIS (WINDOW) ---
