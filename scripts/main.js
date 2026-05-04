@@ -75,8 +75,10 @@ async function carregarAlunos() {
     const tabela = document.getElementById('corpo-tabela');
     if (!tabela) return;
 
+    // --- 1. CAPTURA DOS FILTROS ---
     const valorTurma = document.getElementById('turma').value;
     const valorDia = document.getElementById('dia').value;
+    const valorHorario = document.getElementById('horario').value;
     const termoPesquisa = document.getElementById('pesquisa').value.toLowerCase();
 
     const deParaTurma = { "manha": "Manhã", "tarde": "Tarde" };
@@ -87,17 +89,32 @@ async function carregarAlunos() {
         "sabado": "Sábado" 
     };
 
+    // --- 2. CONSTRUÇÃO DA QUERY ---
     let query = _supabase
         .from('alunos')
         .select('*, frequencia(*), tarefas(*)')
         .order('nome'); 
 
-    if (valorTurma !== "todos") query = query.eq('turma', deParaTurma[valorTurma]);
-    if (valorDia !== "todos") query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
+    // Filtro de Turma (Sempre aplicado)
+    if (valorTurma !== "todos") {
+        query = query.eq('turma', deParaTurma[valorTurma]);
+    }
+    
+    // Filtro de Dia (Inclui Flexíveis)
+    if (valorDia !== "todos") {
+        query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
+    }
+
+    // --- CORREÇÃO DO FILTRO DE HORÁRIO ---
+    // Agora ele busca o horário específico OU qualquer aluno que seja "Flexível"
+    if (valorHorario !== "todos") {
+        query = query.or(`horario_estudo.eq."${valorHorario}",horario_estudo.eq."Flexível"`);
+    }
 
     const { data: alunos, error } = await query;
     if (error) return console.error('Erro:', error.message);
 
+    // --- 3. RENDERIZAÇÃO ---
     const hoje = new Date().toISOString().split('T')[0];
     const fragmento = document.createDocumentFragment();
 
@@ -108,7 +125,6 @@ async function carregarAlunos() {
         const ordenado = (aluno.frequencia || []).sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca));
         const ultimaData = ordenado[0]?.data_presenca || "---";
 
-        // Lógica para mostrar "Presente Hoje" em verde
         const exibirUltimaPresenca = (ultimaData === hoje) 
             ? `<span style="color: #28a745; font-weight: bold;">Presente Hoje</span>` 
             : formatarDataBR(ultimaData);
@@ -359,29 +375,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectTurma = document.getElementById('turma');
     const selectDia = document.getElementById('dia');
+    const selectHorario = document.getElementById('horario'); // Captura o novo select
     const btnTermino = document.getElementById('btnTermino');
     const btnFaltas = document.getElementById('btnFaltas');
 
-    // Auto-seleção de filtros
-    if (selectTurma) selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
-    const mapaDias = { 1: 'segunda', 2: 'segunda', 3: 'quarta', 4: 'quarta', 5: 'sexta', 6: 'sabado' };
-    if (selectDia) selectDia.value = mapaDias[diaSemana] || 'todos';
+    // 1. Auto-seleção de Turma
+    if (selectTurma) {
+        selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
+    }
 
-    // Eventos de Filtro
-    ['turma', 'dia', 'pesquisa'].forEach(id => {
+    // 2. Auto-seleção de Dia
+    const mapaDias = { 1: 'segunda', 2: 'segunda', 3: 'quarta', 4: 'quarta', 5: 'sexta', 6: 'sabado' };
+    if (selectDia) {
+        selectDia.value = mapaDias[diaSemana] || 'todos';
+    }
+
+    // 3. Auto-seleção de Horário (Baseado na hora cheia)
+    if (selectHorario) {
+        const horaAtualFormatada = `${hora.toString().padStart(2, '0')}:00`;
+        
+        // Procura no Select uma opção que comece com a hora atual (ex: "08:00")
+        const opcaoParaSelecionar = Array.from(selectHorario.options).find(opt => 
+            opt.value.startsWith(horaAtualFormatada)
+        );
+
+        if (opcaoParaSelecionar) {
+            selectHorario.value = opcaoParaSelecionar.value;
+        } else {
+            selectHorario.value = 'todos'; // Se estiver fora do horário de aula, mostra todos
+        }
+    }
+
+    // 4. Eventos de Filtro (Adicionado 'horario' na lista)
+    ['turma', 'dia', 'pesquisa', 'horario'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', carregarAlunos);
     });
 
+    // --- RELATÓRIOS ---
+
     // Relatório Término
     btnTermino?.addEventListener('click', async () => {
-        const hoje = new Date().toISOString().split('T')[0];
+        const hojeISO = new Date().toISOString().split('T')[0];
         const limite = new Date();
         limite.setDate(new Date().getDate() + 29);
         const dataLimite = limite.toISOString().split('T')[0];
 
         const { data, error } = await _supabase.from('alunos')
             .select('nome, turma, dia_aula, data_termino')
-            .gte('data_termino', hoje)
+            .gte('data_termino', hojeISO)
             .lte('data_termino', dataLimite)
             .order('data_termino', { ascending: true });
 
@@ -407,5 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
             Swal.fire('Ótima notícia', 'Nenhum aluno com faltas críticas!', 'success');
     });
 
+    // Carrega os dados com os filtros já aplicados automaticamente
     carregarAlunos();
 });

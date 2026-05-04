@@ -41,6 +41,26 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
                                 </select>
                             </div>
                         </div>
+                        
+                        <!-- Novo Campo: Horário de Estudo -->
+                        <div>
+                            <label>Horário de Estudo:</label>
+                            <select id="edit-horario" style="width: 100%; padding: 8px;">
+                                <option value="Flexível">Flexível</option>
+                                <option value="08:00 - 09:00">08:00 - 09:00</option>
+                                <option value="09:00 - 10:00">09:00 - 10:00</option>
+                                <option value="10:00 - 11:00">10:00 - 11:00</option>
+                                <option value="11:00 - 12:00">11:00 - 12:00</option>
+                                <option value="14:00 - 15:00">14:00 - 15:00</option>
+                                <option value="15:00 - 16:00">15:00 - 16:00</option>
+                                <option value="16:00 - 17:00">16:00 - 17:00</option>
+                                <option value="08:00 - 10:00">08:00 - 10:00</option>
+                                <option value="10:00 - 12:00">10:00 - 12:00</option>
+                                <option value="14:00 - 16:00">14:00 - 16:00</option>
+                                <option value="16:00 - 18:00">16:00 - 18:00</option>
+                            </select>
+                        </div>
+
                         <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
                                 <label>Data de Término:</label>
@@ -80,7 +100,6 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
 
     document.body.appendChild(modalDiv);
 
-    // 1. Busca dados do aluno, observações e frequências
     const { data: aluno, error } = await supabase
         .from('alunos')
         .select('*, observacoes(*), frequencia(*)')
@@ -93,27 +112,28 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
         return;
     }
 
-    // Identifica a última observação e a última presença
     const obsExistente = aluno.observacoes?.sort((a, b) => b.id - a.id)[0] || null;
     const textoAtual = obsExistente ? obsExistente.texto_obs : "";
-    
     const ultimaFreq = aluno.frequencia?.sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca))[0] || null;
     const dataFreqAtual = ultimaFreq ? ultimaFreq.data_presenca : "";
 
-    // 2. Preenche os campos
+    // Mapeamento dos campos
     const campos = {
         nome: document.getElementById('edit-nome'),
         turma: document.getElementById('edit-turma'),
         dia: document.getElementById('edit-dia'),
+        horario: document.getElementById('edit-horario'), // Novo mapeamento
         termino: document.getElementById('edit-termino'),
         premium: document.getElementById('edit-premium'),
         obs: document.getElementById('edit-obs'),
         presenca: document.getElementById('edit-ultima-presenca')
     };
 
+    // Preenchimento dos valores
     campos.nome.value = aluno.nome;
     campos.turma.value = aluno.turma;
     campos.dia.value = aluno.dia_aula;
+    campos.horario.value = aluno.horario_estudo || "Flexível"; // Valor vindo do banco
     campos.termino.value = aluno.data_termino;
     campos.premium.value = aluno.certificado_premium;
     campos.obs.value = textoAtual;
@@ -122,12 +142,12 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
     document.getElementById('loading-edicao').style.display = 'none';
     document.getElementById('conteudo-modal-edicao').style.display = 'block';
 
-    // 3. Lógica do botão Cancelar
     document.getElementById('btn-cancelar-edit').onclick = () => {
         const alterado = 
             campos.nome.value !== aluno.nome ||
             campos.turma.value !== aluno.turma ||
             campos.dia.value !== aluno.dia_aula ||
+            campos.horario.value !== (aluno.horario_estudo || "Flexível") ||
             campos.termino.value !== aluno.data_termino ||
             campos.premium.value !== aluno.certificado_premium ||
             campos.obs.value !== textoAtual ||
@@ -151,23 +171,20 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
         }
     };
 
-    // 4. Salvar Alterações
     document.getElementById('form-editar-aluno').onsubmit = async (e) => {
         e.preventDefault();
 
-        // Bloquear botão ou mostrar loading se necessário
         const novosDados = {
             nome: campos.nome.value,
             turma: campos.turma.value,
             dia_aula: campos.dia.value,
+            horario_estudo: campos.horario.value, // Salvando no banco
             data_termino: campos.termino.value,
             certificado_premium: campos.premium.value
         };
 
-        // Atualiza Dados do Aluno
         const { error: errA } = await supabase.from('alunos').update(novosDados).eq('id', alunoId);
 
-        // Atualiza ou Insere Observação
         if (campos.obs.value !== textoAtual) {
             if (obsExistente) {
                 await supabase.from('observacoes').update({ texto_obs: campos.obs.value }).eq('id', obsExistente.id);
@@ -176,15 +193,12 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
             }
         }
 
-        // Atualiza ou Insere Última Presença
         if (campos.presenca.value !== dataFreqAtual) {
             if (ultimaFreq) {
-                // Se o campo for limpo, podemos deletar ou apenas ignorar (aqui vamos atualizar)
                 if (campos.presenca.value) {
                     await supabase.from('frequencia').update({ data_presenca: campos.presenca.value }).eq('id', ultimaFreq.id);
                 }
             } else if (campos.presenca.value) {
-                // Se não tinha presença e agora tem, cria uma
                 await supabase.from('frequencia').insert([{ aluno_id: alunoId, data_presenca: campos.presenca.value }]);
             }
         }
