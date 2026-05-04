@@ -71,7 +71,7 @@ table thead th {
     gap: 10px;
     display: flex;
     margin: 0 auto;
-    color: white;
+    color: #ffffff;
     cursor: pointer;
     border-radius: 4px;
     align-items: center;
@@ -80,7 +80,7 @@ table thead th {
 }
 
 /* Cor diferente para os botões */
-/* .operacoes .btn-presenca {
+.operacoes .btn-presenca {
     background: #6c757d;
 }
 .operacoes .btn-tarefas {
@@ -98,7 +98,7 @@ table thead th {
 }
 .operacoes .btn-editar {
     background: #17a2b8;
-} */
+}
 
 /* Ícones */
 .operacoes i {
@@ -120,6 +120,10 @@ table thead th {
     align-items: center;
     justify-content: center;
     background-color: red;
+}
+.badge.variante-absoluta {
+    cursor: pointer;
+    position: absolute;
 }
 
 .rematricula button, .status-frequencia button {

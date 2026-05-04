@@ -166,24 +166,25 @@ async function carregarAlunos() {
             <td>
                 <div class="operacoes">
                     <div class="dropdown" onclick="toggleDropdown(event, this)">
+                    ${tarefasPendentes > 0 ? `<span class="badge variante-absoluta">${tarefasPendentes}</span>` : ''}
                         <button class="dropdown-btn"><i class="ri-menu-line"></i></button>
                         <div class="dropdown-content">
-                            <button class="btn-presenca" title="${presencaHoje ? 'Desmarcar' : 'Marcar'}" 
+                            <button class="" title="${presencaHoje ? 'Desmarcar' : 'Marcar'}" 
                                 onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id}, ${aluno.id}, '${aluno.nome}')` : `marcarPresenca(${aluno.id}, '${aluno.nome}')`}"
                                 style="${presencaHoje ? 'color: #28a745;' : ''}">
                                 <i class="${presencaHoje ? 'ri-check-double-line' : 'ri-check-line'}"></i>
                                 <span>${presencaHoje ? 'Desmarcar' : 'Marcar Presença'}</span>
                             </button>
-                            <button class="btn-tarefas" onclick="verTarefas(${aluno.id})">
+                            <button class="" onclick="verTarefas(${aluno.id})">
                                 <i class="ri-survey-fill"></i>
                                 <span>Adicionar Tarefa</span>
                                 ${tarefasPendentes > 0 ? `<span class="badge">${tarefasPendentes}</span>` : ''}
                             </button>
-                            <button class="btn-excluir" onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
+                            <button class="" onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
                                 <i class="ri-delete-bin-fill"></i>
                                 <span>Excluir Aluno</span>
                             </button>
-                            <button class="btn-editar" onclick="editarAluno(${aluno.id})">
+                            <button class="" onclick="editarAluno(${aluno.id})">
                                 <i class="ri-edit-fill"></i>
                                 <span>Editar Aluno</span>
                             </button>
