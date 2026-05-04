@@ -54,6 +54,7 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
                                 <option value="14:00 - 15:00">14:00 - 15:00</option>
                                 <option value="15:00 - 16:00">15:00 - 16:00</option>
                                 <option value="16:00 - 17:00">16:00 - 17:00</option>
+                                <option value="17:00 - 18:00">17:00 - 18:00</option>
                                 <option value="08:00 - 10:00">08:00 - 10:00</option>
                                 <option value="10:00 - 12:00">10:00 - 12:00</option>
                                 <option value="14:00 - 16:00">14:00 - 16:00</option>
