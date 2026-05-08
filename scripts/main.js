@@ -2,14 +2,14 @@ import { abrirModalTarefas } from "./components/modalTarefas.js";
 import { abrirModalCadastro } from "./components/modalCadastro.js";
 import { abrirModalEdicao } from "./components/modalEdicao.js";
 
-// --- 1. CONFIGURAÇÃO E CONSTANTES ---
+// --- CONFIGURAÇÃO E CONSTANTES ---
 const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
 const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// --- 2. SISTEMA DE LOG (AUDITORIA) ---
+// --- SISTEMA DE LOG (AUDITORIA) ---
 
 /**
  * Registra qualquer alteração no banco de dados na tabela de logs.
@@ -32,7 +32,7 @@ async function registrarLog(acao, tabela, detalhes = {}) {
     }]);
 }
 
-// --- 3. FUNÇÕES DE APOIO (UTILITÁRIOS) ---
+// --- FUNÇÕES DE APOIO (UTILITÁRIOS) ---
 
 const formatarDataBR = (dataISO) => {
     if (!dataISO || dataISO === "---") return "---";
@@ -69,13 +69,64 @@ const calcularStatusFrequencia = (historico) => {
     return diff >= 14 ? "Muitas Faltas" : "Regular";
 };
 
-// --- 4. LÓGICA DE DADOS (SUPABASE & RENDER) ---
+// --- FUNÇÕES DE APOIO (UTILITÁRIOS) ---
+
+function atualizarOpcoesHorario() {
+    const selectTurma = document.getElementById('turma');
+    const selectDia = document.getElementById('dia');
+    const selectHorario = document.getElementById('horario');
+    
+    if (!selectTurma || !selectHorario) return;
+
+    const turma = selectTurma.value;
+    const dia = selectDia ? selectDia.value : 'todos';
+    const eBloco2h = (dia === 'sexta' || dia === 'sabado');
+
+    const horarios = {
+        manha: [
+            { label: "08:00 - 09:00", bloco: 1 },
+            { label: "09:00 - 10:00", bloco: 1 },
+            { label: "10:00 - 11:00", bloco: 1 },
+            { label: "11:00 - 12:00", bloco: 1 },
+            { label: "08:00 - 10:00", bloco: 2 },
+            { label: "10:00 - 12:00", bloco: 2 }
+        ],
+        tarde: [
+            { label: "14:00 - 15:00", bloco: 1 },
+            { label: "15:00 - 16:00", bloco: 1 },
+            { label: "16:00 - 17:00", bloco: 1 },
+            { label: "17:00 - 18:00", bloco: 1 },
+            { label: "14:00 - 16:00", bloco: 2 },
+            { label: "16:00 - 18:00", bloco: 2 }
+        ]
+    };
+
+    const valorAntigo = selectHorario.value;
+    selectHorario.innerHTML = '<option value="todos">Todos</option>';
+
+    const listaParaRenderizar = horarios[turma] || [...horarios.manha, ...horarios.tarde];
+
+    listaParaRenderizar.forEach(item => {
+        if ((eBloco2h && item.bloco === 2) || (!eBloco2h && item.bloco === 1)) {
+            const opt = document.createElement('option');
+            opt.value = item.label;
+            opt.textContent = item.label;
+            selectHorario.appendChild(opt);
+        }
+    });
+
+    selectHorario.value = Array.from(selectHorario.options).some(o => o.value === valorAntigo) 
+        ? valorAntigo 
+        : 'todos';
+}
+
+// --- LÓGICA DE DADOS (SUPABASE & RENDER) ---
 
 async function carregarAlunos() {
     const tabela = document.getElementById('corpo-tabela');
     if (!tabela) return;
 
-    // --- 1. CAPTURA DOS FILTROS ---
+    // --- CAPTURA DOS FILTROS ---
     const valorTurma = document.getElementById('turma').value;
     const valorDia = document.getElementById('dia').value;
     const valorHorario = document.getElementById('horario').value;
@@ -89,7 +140,7 @@ async function carregarAlunos() {
         "sabado": "Sábado" 
     };
 
-    // --- 2. CONSTRUÇÃO DA QUERY ---
+    // --- CONSTRUÇÃO DA QUERY ---
     let query = _supabase
         .from('alunos')
         .select('*, frequencia(*), tarefas(*)')
@@ -105,10 +156,18 @@ async function carregarAlunos() {
         query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
     }
 
-    // --- CORREÇÃO DO FILTRO DE HORÁRIO ---
-    // Agora ele busca o horário específico OU qualquer aluno que seja "Flexível"
+    // --- FILTRO DE HORÁRIO ---
     if (valorHorario !== "todos") {
-        query = query.or(`horario_estudo.eq."${valorHorario}",horario_estudo.eq."Flexível"`);
+        const diaSelecionado = document.getElementById('dia').value;
+        const diasSemFlexivel = ['sexta', 'sabado'];
+
+        if (diasSemFlexivel.includes(diaSelecionado)) {
+            // Na sexta e sábado, traz APENAS o horário exato
+            query = query.eq('horario_estudo', valorHorario);
+        } else {
+            // Nos outros dias, traz o horário exato OU Flexível
+            query = query.or(`horario_estudo.eq."${valorHorario}",horario_estudo.eq."Flexível"`);
+        }
     }
 
     const { data: alunos, error } = await query;
@@ -221,7 +280,7 @@ function atualizarContagemPresentes(alunos) {
     spanQtd.textContent = totalPresentes > 0 ? `(${totalPresentes})` : '';
 }
 
-// --- 5. AÇÕES GLOBAIS (WINDOW) ---
+// --- AÇÕES GLOBAIS (WINDOW) ---
 
 window.marcarPresenca = async (id, nome) => {
     const hoje = new Date().toISOString().split('T')[0];
@@ -409,45 +468,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectTurma = document.getElementById('turma');
     const selectDia = document.getElementById('dia');
-    const selectHorario = document.getElementById('horario'); // Captura o novo select
+    const selectHorario = document.getElementById('horario');
     const btnTermino = document.getElementById('btnTermino');
     const btnFaltas = document.getElementById('btnFaltas');
 
-    // 1. Auto-seleção de Turma
+    // 1. Auto-seleção inicial de Turma e Dia
     if (selectTurma) {
         selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
     }
 
-    // 2. Auto-seleção de Dia
     const mapaDias = { 1: 'segunda', 2: 'segunda', 3: 'quarta', 4: 'quarta', 5: 'sexta', 6: 'sabado' };
     if (selectDia) {
         selectDia.value = mapaDias[diaSemana] || 'todos';
     }
 
-    // 3. Auto-seleção de Horário (Baseado na hora cheia)
+    // 2. Popula o select de horários com as opções corretas (Manhã/Tarde e 1h/2h)
+    atualizarOpcoesHorario();
+
+    // 3. Auto-seleção de Horário baseada na hora atual
     if (selectHorario) {
-        const horaAtualFormatada = `${hora.toString().padStart(2, '0')}:00`;
-        
-        // Procura no Select uma opção que comece com a hora atual (ex: "08:00")
-        const opcaoParaSelecionar = Array.from(selectHorario.options).find(opt => 
-            opt.value.startsWith(horaAtualFormatada)
-        );
+        const eFimDeSemana = (diaSemana === 5 || diaSemana === 6);
+        const opcoes = Array.from(selectHorario.options);
+
+        const opcaoParaSelecionar = opcoes.find(opt => {
+            if (opt.value === "todos") return false;
+            const h = opt.value.match(/\d{2}/g);
+            if (h && h.length >= 4) {
+                const hInicio = parseInt(h[0]);
+                const hFim = parseInt(h[2]);
+                const duracao = hFim - hInicio;
+                const horaValida = hora >= hInicio && hora < hFim;
+
+                if (eFimDeSemana) {
+                    return horaValida && duracao === 2;
+                } else {
+                    return horaValida && duracao === 1;
+                }
+            }
+            return false;
+        });
 
         if (opcaoParaSelecionar) {
             selectHorario.value = opcaoParaSelecionar.value;
         } else {
-            selectHorario.value = 'todos'; // Se estiver fora do horário de aula, mostra todos
+            const fallback = opcoes.find(opt => {
+                const h = opt.value.match(/\d{2}/g);
+                return h && hora >= parseInt(h[0]) && hora < parseInt(h[2]);
+            });
+            selectHorario.value = fallback ? fallback.value : 'todos';
         }
     }
 
-    // 4. Eventos de Filtro (Adicionado 'horario' na lista)
-    ['turma', 'dia', 'pesquisa', 'horario'].forEach(id => {
+    // 4. Configuração dos Eventos de Filtro
+    // Quando mudar Turma ou Dia, precisamos atualizar a lista de horários antes de carregar
+    selectTurma?.addEventListener('change', () => {
+        atualizarOpcoesHorario();
+        carregarAlunos();
+    });
+
+    selectDia?.addEventListener('change', () => {
+        atualizarOpcoesHorario();
+        carregarAlunos();
+    });
+
+    // Outros filtros que não mudam a lista de opções, apenas filtram
+    ['pesquisa', 'horario'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', carregarAlunos);
     });
 
-    // --- RELATÓRIOS ---
+    // --- RELATÓRIOS (Mantidos como no seu original) ---
 
-    // Relatório Término
     btnTermino?.addEventListener('click', async () => {
         const hojeISO = new Date().toISOString().split('T')[0];
         const limite = new Date();
@@ -468,7 +558,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Relatório Faltas
     btnFaltas?.addEventListener('click', async () => {
         const { data } = await _supabase.from('alunos').select('nome, turma, dia_aula, frequencia(data_presenca)');
         const filtrados = data.filter(a => calcularStatusFrequencia(a.frequencia) === "Muitas Faltas").map(a => {
@@ -482,6 +571,6 @@ document.addEventListener('DOMContentLoaded', () => {
             Swal.fire('Ótima notícia', 'Nenhum aluno com faltas críticas!', 'success');
     });
 
-    // Carrega os dados com os filtros já aplicados automaticamente
+    // Carga inicial de dados
     carregarAlunos();
 });
