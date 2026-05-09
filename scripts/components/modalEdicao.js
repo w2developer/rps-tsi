@@ -42,24 +42,10 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
                             </div>
                         </div>
                         
-                        <!-- Novo Campo: Horário de Estudo -->
                         <div>
                             <label>Horário de Estudo:</label>
                             <select id="edit-horario" style="width: 100%; padding: 8px;">
-                                <option value="Flexível">Flexível</option>
-                                <option value="08:00 - 09:00">08:00 - 09:00</option>
-                                <option value="09:00 - 10:00">09:00 - 10:00</option>
-                                <option value="10:00 - 11:00">10:00 - 11:00</option>
-                                <option value="11:00 - 12:00">11:00 - 12:00</option>
-                                <option value="14:00 - 15:00">14:00 - 15:00</option>
-                                <option value="15:00 - 16:00">15:00 - 16:00</option>
-                                <option value="16:00 - 17:00">16:00 - 17:00</option>
-                                <option value="17:00 - 18:00">17:00 - 18:00</option>
-                                <option value="08:00 - 10:00">08:00 - 10:00</option>
-                                <option value="10:00 - 12:00">10:00 - 12:00</option>
-                                <option value="14:00 - 16:00">14:00 - 16:00</option>
-                                <option value="16:00 - 18:00">16:00 - 18:00</option>
-                            </select>
+                                </select>
                         </div>
 
                         <div style="display: flex; gap: 10px;">
@@ -101,6 +87,7 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
 
     document.body.appendChild(modalDiv);
 
+    // --- BUSCA DADOS DO ALUNO ---
     const { data: aluno, error } = await supabase
         .from('alunos')
         .select('*, observacoes(*), frequencia(*)')
@@ -113,36 +100,83 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
         return;
     }
 
-    const obsExistente = aluno.observacoes?.sort((a, b) => b.id - a.id)[0] || null;
-    const textoAtual = obsExistente ? obsExistente.texto_obs : "";
-    const ultimaFreq = aluno.frequencia?.sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca))[0] || null;
-    const dataFreqAtual = ultimaFreq ? ultimaFreq.data_presenca : "";
-
-    // Mapeamento dos campos
+    // --- ELEMENTOS E LÓGICA DINÂMICA DE HORÁRIO ---
     const campos = {
         nome: document.getElementById('edit-nome'),
         turma: document.getElementById('edit-turma'),
         dia: document.getElementById('edit-dia'),
-        horario: document.getElementById('edit-horario'), // Novo mapeamento
+        horario: document.getElementById('edit-horario'),
         termino: document.getElementById('edit-termino'),
         premium: document.getElementById('edit-premium'),
         obs: document.getElementById('edit-obs'),
         presenca: document.getElementById('edit-ultima-presenca')
     };
 
-    // Preenchimento dos valores
+    function atualizarHorariosEdicao(valorParaSetar = null) {
+        const turma = campos.turma.value;
+        const dia = campos.dia.value;
+        const eBloco2h = (dia === 'Sexta' || dia === 'Sábado');
+        
+        const horariosDef = {
+            'Manhã': [
+                { label: "08:00 - 09:00", bloco: 1 }, { label: "09:00 - 10:00", bloco: 1 },
+                { label: "10:00 - 11:00", bloco: 1 }, { label: "11:00 - 12:00", bloco: 1 },
+                { label: "08:00 - 10:00", bloco: 2 }, { label: "10:00 - 12:00", bloco: 2 }
+            ],
+            'Tarde': [
+                { label: "14:00 - 15:00", bloco: 1 }, { label: "15:00 - 16:00", bloco: 1 },
+                { label: "16:00 - 17:00", bloco: 1 }, { label: "17:00 - 18:00", bloco: 1 },
+                { label: "14:00 - 16:00", bloco: 2 }, { label: "16:00 - 18:00", bloco: 2 }
+            ]
+        };
+
+        // Salva o valor atual antes de limpar (caso o usuário mude só o dia/turma)
+        const valorAtual = valorParaSetar || campos.horario.value;
+
+        campos.horario.innerHTML = dia === 'Flexível' ? '<option value="Flexível">Flexível</option>' : '';
+        
+        if (dia !== 'Flexível') {
+            horariosDef[turma].forEach(item => {
+                if ((eBloco2h && item.bloco === 2) || (!eBloco2h && item.bloco === 1)) {
+                    const opt = document.createElement('option');
+                    opt.value = item.label;
+                    opt.textContent = item.label;
+                    campos.horario.appendChild(opt);
+                }
+            });
+        }
+
+        // Tenta re-selecionar o valor
+        campos.horario.value = Array.from(campos.horario.options).some(o => o.value === valorAtual) 
+            ? valorAtual 
+            : campos.horario.options[0]?.value;
+    }
+
+    // Configura listeners para mudanças
+    campos.turma.onchange = () => atualizarHorariosEdicao();
+    campos.dia.onchange = () => atualizarHorariosEdicao();
+
+    // --- PREENCHIMENTO DOS DADOS ---
+    const obsExistente = aluno.observacoes?.sort((a, b) => b.id - a.id)[0] || null;
+    const textoAtual = obsExistente ? obsExistente.texto_obs : "";
+    const ultimaFreq = aluno.frequencia?.sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca))[0] || null;
+    const dataFreqAtual = ultimaFreq ? ultimaFreq.data_presenca : "";
+
     campos.nome.value = aluno.nome;
     campos.turma.value = aluno.turma;
     campos.dia.value = aluno.dia_aula;
-    campos.horario.value = aluno.horario_estudo || "Flexível"; // Valor vindo do banco
     campos.termino.value = aluno.data_termino;
     campos.premium.value = aluno.certificado_premium;
     campos.obs.value = textoAtual;
     campos.presenca.value = dataFreqAtual;
 
+    // Inicializa os horários passando o valor que veio do banco
+    atualizarHorariosEdicao(aluno.horario_estudo || "Flexível");
+
     document.getElementById('loading-edicao').style.display = 'none';
     document.getElementById('conteudo-modal-edicao').style.display = 'block';
 
+    // --- BOTÕES E SALVAMENTO ---
     document.getElementById('btn-cancelar-edit').onclick = () => {
         const alterado = 
             campos.nome.value !== aluno.nome ||
@@ -161,12 +195,9 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Sim, descartar',
-                cancelButtonText: 'Voltar a editar'
-            }).then((result) => {
-                if (result.isConfirmed) modalDiv.remove();
-            });
+                cancelButtonText: 'Voltar'
+            }).then((result) => { if (result.isConfirmed) modalDiv.remove(); });
         } else {
             modalDiv.remove();
         }
@@ -179,13 +210,14 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
             nome: campos.nome.value,
             turma: campos.turma.value,
             dia_aula: campos.dia.value,
-            horario_estudo: campos.horario.value, // Salvando no banco
+            horario_estudo: campos.horario.value,
             data_termino: campos.termino.value,
             certificado_premium: campos.premium.value
         };
 
         const { error: errA } = await supabase.from('alunos').update(novosDados).eq('id', alunoId);
 
+        // Atualização de Obs e Presença (Mantido seu código original)
         if (campos.obs.value !== textoAtual) {
             if (obsExistente) {
                 await supabase.from('observacoes').update({ texto_obs: campos.obs.value }).eq('id', obsExistente.id);
@@ -207,7 +239,7 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
         if (errA) {
             Swal.fire('Erro', "Erro ao salvar.", 'error');
         } else {
-            Swal.fire({ title: 'Salvo!', text: 'Dados atualizados com sucesso.', icon: 'success', timer: 1000, showConfirmButton: false });
+            Swal.fire({ title: 'Salvo!', icon: 'success', timer: 1000, showConfirmButton: false });
             modalDiv.remove();
             aoSalvar();
         }

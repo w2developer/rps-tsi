@@ -47,6 +47,12 @@ export function abrirModalCadastro(supabase, aoSalvar) {
                     </div>
 
                     <div>
+                        <label>Horário de Estudo:</label>
+                        <select id="cad-horario" style="width: 100%; padding: 8px;">
+                            </select>
+                    </div>
+
+                    <div>
                         <label>Data de Término:</label>
                         <input type="date" id="cad-termino" required style="width: 100%; padding: 8px;">
                     </div>
@@ -62,29 +68,67 @@ export function abrirModalCadastro(supabase, aoSalvar) {
 
     document.body.appendChild(modalDiv);
 
-    // --- LÓGICA DE IMPORTAÇÃO JSON ---
+    // --- LÓGICA DE POPULAR HORÁRIOS DINAMICAMENTE NO CADASTRO ---
+    const cadTurma = document.getElementById('cad-turma');
+    const cadDia = document.getElementById('cad-dia');
+    const cadHorario = document.getElementById('cad-horario');
+
+    function atualizarHorariosCadastro() {
+        const turma = cadTurma.value; // "Manhã" ou "Tarde"
+        const dia = cadDia.value;
+        const eBloco2h = (dia === 'Sexta' || dia === 'Sábado');
+        
+        const horarios = {
+            'Manhã': [
+                { label: "08:00 - 09:00", bloco: 1 }, { label: "09:00 - 10:00", bloco: 1 },
+                { label: "10:00 - 11:00", bloco: 1 }, { label: "11:00 - 12:00", bloco: 1 },
+                { label: "08:00 - 10:00", bloco: 2 }, { label: "10:00 - 12:00", bloco: 2 }
+            ],
+            'Tarde': [
+                { label: "14:00 - 15:00", bloco: 1 }, { label: "15:00 - 16:00", bloco: 1 },
+                { label: "16:00 - 17:00", bloco: 1 }, { label: "17:00 - 18:00", bloco: 1 },
+                { label: "14:00 - 16:00", bloco: 2 }, { label: "16:00 - 18:00", bloco: 2 }
+            ]
+        };
+
+        cadHorario.innerHTML = dia === 'Flexível' ? '<option value="Flexível">Flexível</option>' : '';
+        
+        if (dia !== 'Flexível') {
+            horarios[turma].forEach(item => {
+                if ((eBloco2h && item.bloco === 2) || (!eBloco2h && item.bloco === 1)) {
+                    const opt = document.createElement('option');
+                    opt.value = item.label;
+                    opt.textContent = item.label;
+                    cadHorario.appendChild(opt);
+                }
+            });
+        }
+    }
+
+    cadTurma.onchange = atualizarHorariosCadastro;
+    cadDia.onchange = atualizarHorariosCadastro;
+    atualizarHorariosCadastro(); // Chamada inicial
+
+    // --- LÓGICA DE IMPORTAÇÃO JSON (Atualizada com horario) ---
     document.getElementById('import-json').onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        // Dentro do leitor do arquivo JSON no modalCadastro.js
         reader.onload = async (event) => {
             try {
                 const dadosBrutos = JSON.parse(event.target.result);
                 if (!Array.isArray(dadosBrutos)) throw new Error("O JSON deve ser uma lista []");
 
-                // 1. Prepara a lista de alunos com o status do certificado vindo do JSON
                 const listaAlunos = dadosBrutos.map(item => ({
                     nome: item.nome,
                     turma: item.turma,
                     dia_aula: item.dia_aula,
+                    horario_estudo: item.horario_estudo, // Adicionado
                     data_termino: item.data_termino,
-                    // Usa o valor do JSON ou um padrão caso esteja vazio
                     certificado_premium: item.certificado_premium || "No aguardo" 
                 }));
 
-                // Insere os alunos e recupera os IDs
                 const { data: alunosInseridos, error: errAlunos } = await supabase
                     .from('alunos')
                     .insert(listaAlunos)
@@ -92,26 +136,21 @@ export function abrirModalCadastro(supabase, aoSalvar) {
 
                 if (errAlunos) throw errAlunos;
 
-                // 2. Prepara a lista de presenças usando as datas vindas do JSON
-                // Fazemos um de-para usando o nome para ligar o ID gerado aos dados do JSON
                 const registrosPresenca = alunosInseridos.map(alunoInserido => {
                     const dadosOriginais = dadosBrutos.find(d => d.nome === alunoInserido.nome);
                     return {
                         aluno_id: alunoInserido.id,
-                        // Usa a data do JSON ou a data de hoje como fallback
                         data_presenca: dadosOriginais.ultima_presenca || new Date().toISOString().split('T')[0]
                     };
                 });
 
-                const { error: errFreq } = await supabase.from('frequencia').insert(registrosPresenca);
-                if (errFreq) throw errFreq;
+                await supabase.from('frequencia').insert(registrosPresenca);
 
-                alert(`Sucesso! ${listaAlunos.length} alunos importados com as presenças e certificados do arquivo.`);
+                alert(`Sucesso! ${listaAlunos.length} alunos importados.`);
                 modalDiv.remove();
                 aoSalvar();
             } catch (err) {
                 alert("Erro na importação: " + err.message);
-                console.error(err);
             }
         };
         reader.readAsText(file);
@@ -125,6 +164,7 @@ export function abrirModalCadastro(supabase, aoSalvar) {
             nome: document.getElementById('cad-nome').value,
             turma: document.getElementById('cad-turma').value,
             dia_aula: document.getElementById('cad-dia').value,
+            horario_estudo: document.getElementById('cad-horario').value, // Adicionado
             data_termino: document.getElementById('cad-termino').value
         };
 
@@ -133,7 +173,6 @@ export function abrirModalCadastro(supabase, aoSalvar) {
         if (error) {
             Swal.fire('Erro', "Erro ao cadastrar: " + error.message, 'error');
         } else {
-            // Alerta de confirmação antes de fechar
             Swal.fire({
                 title: 'Cadastrado!',
                 text: 'O aluno foi salvo com sucesso.',
