@@ -15,7 +15,15 @@ table th {
     border: none;
     color: #ffffff;
     font-weight: 600;
-    background-color: #10172A;
+    background-color: #1e3061;
+}
+
+table th:first-child {
+    border-radius: 15px 0 0 0;
+}
+
+table th:last-child {
+    border-radius: 0 15px 0 0;
 }
 
 /* Estilo para linhas pares */
@@ -129,7 +137,9 @@ table thead th {
 .rematricula button, .status-frequencia button {
     cursor: pointer;
     font-weight: 500;
-    padding: .2rem .4rem;
+    border-radius: 30px;
+    padding: .2rem .8rem;
+    box-shadow: 0 0 4px #00000025;
 }
 .rematricula .no {
     background: #fff2b9;

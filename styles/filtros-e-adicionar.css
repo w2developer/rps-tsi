@@ -10,15 +10,29 @@
     display: flex;
     gap: 10px;
 }
+.filtros-e-adicionar .filtros .selecionar {
+    gap: 5px;
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+}
+.filtros-e-adicionar .filtros .selecionar label {
+    color: #10172A;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
 .filtros-e-adicionar .filtros select {
     padding: 5px;
+    outline: none;
     cursor: pointer;
+    min-width: 130px;
+    appearance: none;
+    text-align: center;
     border-radius: 4px;
+    -moz-appearance: none;
     border: 1px solid #ccc;
     background-color: #fff;
     -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
 }
 .filtros-e-adicionar .filtros select:hover {
     border-color: #999;
@@ -32,8 +46,8 @@
     border-radius: 4px;
     align-items: center;
     transition: .3s ease;
-    background-color: #17a2b8;
+    background-color: #1e3061;
 }
 .filtros-e-adicionar .btn-adicionar:hover {
-    background-color: #138b9d;
+    background-color: #10172A;
 }
