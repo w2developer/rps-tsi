@@ -282,6 +282,8 @@ function atualizarContagemPresentes(alunos) {
 
 // --- AÇÕES GLOBAIS (WINDOW) ---
 
+window.carregarAlunos = carregarAlunos;
+
 window.marcarPresenca = async (id, nome) => {
     const hoje = new Date().toISOString().split('T')[0];
     const { error: erroPresenca } = await _supabase.from('frequencia').insert([{ aluno_id: id, data_presenca: hoje }]);
@@ -316,6 +318,32 @@ window.desmarcarPresenca = (presencaId, alunoId, nome) => {
     });
 };
 
+window.verTarefas = id => abrirModalTarefas(id, _supabase);
+
+window.concluirTarefa = async (idTarefa, alunoId) => {
+    const { error } = await _supabase.from('tarefas').update({ concluida: true }).eq('id', idTarefa);
+    if (!error) {
+        await registrarLog('CONCLUIR_TAREFA', 'tarefas', { tarefa_id: idTarefa, aluno_id: alunoId });
+        document.getElementById('modal-tarefas')?.remove();
+        abrirModalTarefas(alunoId, _supabase);
+    }
+    carregarAlunos();
+};
+
+window.deletarTarefa = async (idTarefa, alunoId) => {
+    Swal.fire({ title: 'Excluir tarefa?', icon: 'question', showCancelButton: true }).then(async (result) => {
+        if (result.isConfirmed) {
+            const { error } = await _supabase.from('tarefas').delete().eq('id', idTarefa);
+            if (!error) {
+                await registrarLog('DELETAR_TAREFA', 'tarefas', { tarefa_id: idTarefa, aluno_id: alunoId });
+                document.getElementById('modal-tarefas')?.remove();
+                abrirModalTarefas(alunoId, _supabase);
+            }
+            carregarAlunos();
+        }
+    });
+};
+
 window.excluirAluno = (id, nome) => {
     Swal.fire({
         title: 'Confirmar Exclusão',
@@ -332,7 +360,6 @@ window.excluirAluno = (id, nome) => {
     });
 };
 
-window.verTarefas = id => abrirModalTarefas(id, _supabase);
 
 // Para cadastros e edições, o log deve ser inserido dentro dos componentes ou após o retorno da função.
 window.editarAluno = id => abrirModalEdicao(id, _supabase, async () => {
@@ -345,27 +372,6 @@ window.abrirModalCadastro = () => abrirModalCadastro(_supabase, async () => {
     carregarAlunos();
 });
 
-window.concluirTarefa = async (idTarefa, alunoId) => {
-    const { error } = await _supabase.from('tarefas').update({ concluida: true }).eq('id', idTarefa);
-    if (!error) {
-        await registrarLog('CONCLUIR_TAREFA', 'tarefas', { tarefa_id: idTarefa, aluno_id: alunoId });
-        document.getElementById('modal-tarefas')?.remove();
-        abrirModalTarefas(alunoId, _supabase);
-    }
-};
-
-window.deletarTarefa = async (idTarefa, alunoId) => {
-    Swal.fire({ title: 'Excluir tarefa?', icon: 'question', showCancelButton: true }).then(async (result) => {
-        if (result.isConfirmed) {
-            const { error } = await _supabase.from('tarefas').delete().eq('id', idTarefa);
-            if (!error) {
-                await registrarLog('DELETAR_TAREFA', 'tarefas', { tarefa_id: idTarefa, aluno_id: alunoId });
-                document.getElementById('modal-tarefas')?.remove();
-                abrirModalTarefas(alunoId, _supabase);
-            }
-        }
-    });
-};
 
 window.marcarRematricula = async (id, nome) => {
     Swal.fire({ title: `Confirmar rematrícula de ${nome}?`, icon: 'warning', showCancelButton: true }).then(async (result) => {
