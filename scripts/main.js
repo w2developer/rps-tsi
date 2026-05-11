@@ -199,8 +199,8 @@ async function carregarAlunos() {
         tr.innerHTML = `
             <td>
                 ${aluno.nome}
-                <div style="font-size: 0.75rem; color: #666; margin-top: 2px;">
-                    ${exibirHorario}
+                <div style="font-size: 0.65rem; color: #666; margin-top: 2px;">
+                    ${aluno.dia_aula} - ${exibirHorario}
                 </div>
             </td>
             <td>${formatarDataBR(aluno.data_termino)}</td>
