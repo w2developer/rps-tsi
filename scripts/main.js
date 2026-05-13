@@ -11,12 +11,6 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- SISTEMA DE LOG (AUDITORIA) ---
 
-/**
- * Registra qualquer alteração no banco de dados na tabela de logs.
- * @param {string} acao - O que foi feito (Ex: EXCLUIR ALUNO)
- * @param {string} tabela - Tabela afetada
- * @param {object} detalhes - Informações extras para auditoria
- */
 async function registrarLog(acao, tabela, detalhes = {}) {
     const usuario = JSON.parse(sessionStorage.getItem('usuario_logado'));
     
@@ -40,6 +34,19 @@ const formatarDataBR = (dataISO) => {
     return `${dia}/${mes}/${ano}`;
 };
 
+// Otimizado: Busca a maior data comparando strings ISO (O(n))
+const obterUltimaDataISO = (historico) => {
+    if (!historico?.length) return null;
+    return historico.reduce((max, p) => p.data_presenca > max ? p.data_presenca : max, historico[0].data_presenca);
+};
+
+const calcularStatusFrequencia = (historico) => {
+    const ultima = obterUltimaDataISO(historico);
+    if (!ultima) return "---";
+    const diff = Math.floor((new Date() - new Date(ultima)) / MS_PER_DAY);
+    return diff >= 14 ? "Muitas Faltas" : "Regular";
+};
+
 const calcularTempoConclusao = (dataTermino) => {
     if (!dataTermino) return "---";
     const diffMs = new Date(dataTermino) - new Date();
@@ -55,21 +62,19 @@ const calcularTempoConclusao = (dataTermino) => {
 const tempoConclusaoEmDias = (dataTermino) => {
     const dataFim = new Date(dataTermino);
     if (isNaN(dataFim.getTime())) return false;
-    
     const diffMs = dataFim - new Date();
     const totalDias = Math.floor(diffMs / MS_PER_DAY);
     return totalDias <= 30 && totalDias > 0;
 };
 
-const calcularStatusFrequencia = (historico) => {
-    if (!historico?.length) return "---";
-    const datas = historico.map(p => new Date(p.data_presenca));
-    const ultima = new Date(Math.max(...datas));
-    const diff = Math.floor((new Date() - ultima) / MS_PER_DAY);
-    return diff >= 14 ? "Muitas Faltas" : "Regular";
-};
-
-// --- FUNÇÕES DE APOIO (UTILITÁRIOS) ---
+// Função Debounce para performance da pesquisa
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
 
 function atualizarOpcoesHorario() {
     const selectTurma = document.getElementById('turma');
@@ -116,56 +121,36 @@ function atualizarOpcoesHorario() {
     });
 
     selectHorario.value = Array.from(selectHorario.options).some(o => o.value === valorAntigo) 
-        ? valorAntigo 
-        : 'todos';
+        ? valorAntigo : 'todos';
 }
 
-// --- LÓGICA DE DADOS (SUPABASE & RENDER) ---
+// --- LÓGICA DE DADOS ---
 
 async function carregarAlunos() {
     const tabela = document.getElementById('corpo-tabela');
     if (!tabela) return;
 
-    // --- CAPTURA DOS FILTROS ---
     const valorTurma = document.getElementById('turma').value;
     const valorDia = document.getElementById('dia').value;
     const valorHorario = document.getElementById('horario').value;
     const termoPesquisa = document.getElementById('pesquisa').value.toLowerCase();
 
     const deParaTurma = { "manha": "Manhã", "tarde": "Tarde" };
-    const deParaDia = { 
-        "segunda": "Segunda/Terça", 
-        "quarta": "Quarta/Quinta", 
-        "sexta": "Sexta", 
-        "sabado": "Sábado" 
-    };
+    const deParaDia = { "segunda": "Segunda/Terça", "quarta": "Quarta/Quinta", "sexta": "Sexta", "sabado": "Sábado" };
 
-    // --- CONSTRUÇÃO DA QUERY ---
     let query = _supabase
         .from('alunos')
         .select('*, frequencia(*), tarefas(*)')
         .order('nome'); 
 
-    // Filtro de Turma (Sempre aplicado)
-    if (valorTurma !== "todos") {
-        query = query.eq('turma', deParaTurma[valorTurma]);
-    }
-    
-    // Filtro de Dia (Inclui Flexíveis)
-    if (valorDia !== "todos") {
-        query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
-    }
+    if (valorTurma !== "todos") query = query.eq('turma', deParaTurma[valorTurma]);
+    if (valorDia !== "todos") query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
 
-    // --- FILTRO DE HORÁRIO ---
     if (valorHorario !== "todos") {
         const diaSelecionado = document.getElementById('dia').value;
-        const diasSemFlexivel = ['sexta', 'sabado'];
-
-        if (diasSemFlexivel.includes(diaSelecionado)) {
-            // Na sexta e sábado, traz APENAS o horário exato
+        if (['sexta', 'sabado'].includes(diaSelecionado)) {
             query = query.eq('horario_estudo', valorHorario);
         } else {
-            // Nos outros dias, traz o horário exato OU Flexível
             query = query.or(`horario_estudo.eq."${valorHorario}",horario_estudo.eq."Flexível"`);
         }
     }
@@ -175,7 +160,6 @@ async function carregarAlunos() {
 
     atualizarContagemPresentes(alunos);
 
-    // --- 3. RENDERIZAÇÃO ---
     const hoje = new Date().toISOString().split('T')[0];
     const fragmento = document.createDocumentFragment();
 
@@ -183,8 +167,7 @@ async function carregarAlunos() {
         const freqStatus = calcularStatusFrequencia(aluno.frequencia);
         const presencaHoje = (aluno.frequencia || []).find(p => p.data_presenca === hoje);
         const tarefasPendentes = (aluno.tarefas || []).filter(t => !t.concluida).length;
-        const ordenado = (aluno.frequencia || []).sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca));
-        const ultimaData = ordenado[0]?.data_presenca || "---";
+        const ultimaData = obterUltimaDataISO(aluno.frequencia) || "---";
 
         const exibirHorario = aluno.horario_estudo && aluno.horario_estudo !== 'Flexível' 
             ? aluno.horario_estudo 
@@ -228,22 +211,21 @@ async function carregarAlunos() {
                     ${tarefasPendentes > 0 ? `<span class="badge variante-absoluta">${tarefasPendentes}</span>` : ''}
                         <button class="dropdown-btn"><i class="ri-menu-line"></i></button>
                         <div class="dropdown-content">
-                            <button class="" title="${presencaHoje ? 'Desmarcar' : 'Marcar'}" 
-                                onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id}, ${aluno.id}, '${aluno.nome}')` : `marcarPresenca(${aluno.id}, '${aluno.nome}')`}"
+                            <button onclick="${presencaHoje ? `desmarcarPresenca(${presencaHoje.id}, ${aluno.id}, '${aluno.nome}')` : `marcarPresenca(${aluno.id}, '${aluno.nome}')`}"
                                 style="${presencaHoje ? 'color: #28a745;' : ''}">
                                 <i class="${presencaHoje ? 'ri-check-double-line' : 'ri-check-line'}"></i>
                                 <span>${presencaHoje ? 'Desmarcar' : 'Marcar Presença'}</span>
                             </button>
-                            <button class="" onclick="verTarefas(${aluno.id})">
+                            <button onclick="verTarefas(${aluno.id})">
                                 <i class="ri-survey-fill"></i>
                                 <span>Adicionar Tarefa</span>
                                 ${tarefasPendentes > 0 ? `<span class="badge">${tarefasPendentes}</span>` : ''}
                             </button>
-                            <button class="" onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
+                            <button onclick="excluirAluno(${aluno.id}, '${aluno.nome}')">
                                 <i class="ri-delete-bin-fill"></i>
                                 <span>Excluir Aluno</span>
                             </button>
-                            <button class="" onclick="editarAluno(${aluno.id})">
+                            <button onclick="editarAluno(${aluno.id})">
                                 <i class="ri-edit-fill"></i>
                                 <span>Editar Aluno</span>
                             </button>
@@ -258,31 +240,18 @@ async function carregarAlunos() {
     tabela.appendChild(fragmento);
 }
 
-// FUNÇÕES DE APOIO (UTILITÁRIOS)
-
 function atualizarContagemPresentes(alunos) {
     const spanQtd = document.getElementById('qtd-presente');
     if (!spanQtd) return;
-
     const hoje = new Date().toISOString().split('T')[0];
-
     const totalPresentes = alunos.filter(aluno => {
-        // Ignora flexíveis na contagem
-        if (aluno.horario_estudo === 'Flexível' || aluno.dia_aula === 'Flexível') {
-            return false;
-        }
-
-        // Verifica se existe presença hoje
+        if (aluno.horario_estudo === 'Flexível' || aluno.dia_aula === 'Flexível') return false;
         return (aluno.frequencia || []).some(p => p.data_presenca === hoje);
     }).length;
-
-    // Atualiza o texto do span
     spanQtd.textContent = totalPresentes > 0 ? `(${totalPresentes})` : '';
 }
 
 // --- AÇÕES GLOBAIS (WINDOW) ---
-
-window.carregarAlunos = carregarAlunos;
 
 window.marcarPresenca = async (id, nome) => {
     const hoje = new Date().toISOString().split('T')[0];
@@ -295,7 +264,6 @@ window.marcarPresenca = async (id, nome) => {
     }
 
     await _supabase.from('alunos').update({ contato_f: 'no' }).eq('id', id);
-    
     await registrarLog('MARCAR_PRESENCA', 'frequencia', { aluno: nome, aluno_id: id, data: hoje });
     carregarAlunos();
 };
@@ -360,8 +328,6 @@ window.excluirAluno = (id, nome) => {
     });
 };
 
-
-// Para cadastros e edições, o log deve ser inserido dentro dos componentes ou após o retorno da função.
 window.editarAluno = id => abrirModalEdicao(id, _supabase, async () => {
     await registrarLog('EDITAR_ALUNO', 'alunos', { aluno_id: id });
     carregarAlunos();
@@ -372,7 +338,6 @@ window.abrirModalCadastro = () => abrirModalCadastro(_supabase, async () => {
     carregarAlunos();
 });
 
-
 window.marcarRematricula = async (id, nome) => {
     Swal.fire({ title: `Confirmar rematrícula de ${nome}?`, icon: 'warning', showCancelButton: true }).then(async (result) => {
         if (result.isConfirmed) {
@@ -380,8 +345,6 @@ window.marcarRematricula = async (id, nome) => {
             if (!error) {
                 await registrarLog('MARCAR_REMATRICULA', 'alunos', { aluno: nome, status: 'YES' });
                 carregarAlunos();
-            } else {
-                Swal.fire('Erro!', error.message, 'error');
             }
         }
     });
@@ -420,52 +383,34 @@ window.desmarcarContatoFaltas = (id, nome) => {
 };
 
 window.toggleDropdown = (event, dropdown) => {
-    event.stopPropagation(); // Impede clique na tabela
-
-    // Fecha todos os outros dropdowns
-    document.querySelectorAll('.dropdown-content').forEach(dd => {
-        dd.classList.remove('show');
-    });
-
-    // Toggle deste dropdown
-    const content = dropdown.querySelector('.dropdown-content');
-    content.classList.toggle('show');
+    event.stopPropagation();
+    document.querySelectorAll('.dropdown-content').forEach(dd => dd.classList.remove('show'));
+    dropdown.querySelector('.dropdown-content').classList.toggle('show');
 }
 
-// Fecha dropdowns quando clica fora
-document.addEventListener('click', function() {
-    document.querySelectorAll('.dropdown-content').forEach(dd => {
-        dd.classList.remove('show');
-    });
+document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-content').forEach(dd => dd.classList.remove('show'));
 });
 
-// --- 6. RELATÓRIOS (PDF) ---
+// --- RELATÓRIOS (PDF) ---
 
 const gerarTabelaPDF = (titulo, colunas, linhas, nomeArquivo, corDestaque) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
     doc.text(`RPS-TSI | ${titulo}`, 14, 15);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Relatório extraído em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 22);
     doc.autoTable({
         startY: 30,
         head: [colunas],
         body: linhas,
         headStyles: { fillColor: corDestaque },
         theme: 'striped',
-        styles: { font: "helvetica", fontSize: 9 },
     });
-    
-    // Log da extração do PDF
     registrarLog('GERAR_RELATORIO', 'sistema', { tipo: titulo });
-    
     doc.save(`${nomeArquivo}_${new Date().getTime()}.pdf`);
 };
 
-// --- 7. INICIALIZAÇÃO DA INTERFACE ---
+// --- INICIALIZAÇÃO DA INTERFACE ---
 
 document.addEventListener('DOMContentLoaded', () => {
     const agora = new Date();
@@ -475,86 +420,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectTurma = document.getElementById('turma');
     const selectDia = document.getElementById('dia');
     const selectHorario = document.getElementById('horario');
-    const btnTermino = document.getElementById('btnTermino');
-    const btnFaltas = document.getElementById('btnFaltas');
+    const inputPesquisa = document.getElementById('pesquisa');
 
-    // 1. Auto-seleção inicial de Turma e Dia
-    if (selectTurma) {
-        selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
-    }
-
+    if (selectTurma) selectTurma.value = (hora < 12) ? 'manha' : 'tarde';
     const mapaDias = { 1: 'segunda', 2: 'segunda', 3: 'quarta', 4: 'quarta', 5: 'sexta', 6: 'sabado' };
-    if (selectDia) {
-        selectDia.value = mapaDias[diaSemana] || 'todos';
-    }
+    if (selectDia) selectDia.value = mapaDias[diaSemana] || 'todos';
 
-    // 2. Popula o select de horários com as opções corretas (Manhã/Tarde e 1h/2h)
     atualizarOpcoesHorario();
 
-    // 3. Auto-seleção de Horário baseada na hora atual
     if (selectHorario) {
         const eFimDeSemana = (diaSemana === 5 || diaSemana === 6);
         const opcoes = Array.from(selectHorario.options);
-
-        const opcaoParaSelecionar = opcoes.find(opt => {
+        const findOpt = opcoes.find(opt => {
             if (opt.value === "todos") return false;
             const h = opt.value.match(/\d{2}/g);
             if (h && h.length >= 4) {
                 const hInicio = parseInt(h[0]);
                 const hFim = parseInt(h[2]);
                 const duracao = hFim - hInicio;
-                const horaValida = hora >= hInicio && hora < hFim;
-
-                if (eFimDeSemana) {
-                    return horaValida && duracao === 2;
-                } else {
-                    return horaValida && duracao === 1;
-                }
+                return hora >= hInicio && hora < hFim && (eFimDeSemana ? duracao === 2 : duracao === 1);
             }
             return false;
         });
-
-        if (opcaoParaSelecionar) {
-            selectHorario.value = opcaoParaSelecionar.value;
-        } else {
-            const fallback = opcoes.find(opt => {
-                const h = opt.value.match(/\d{2}/g);
-                return h && hora >= parseInt(h[0]) && hora < parseInt(h[2]);
-            });
-            selectHorario.value = fallback ? fallback.value : 'todos';
-        }
+        selectHorario.value = findOpt ? findOpt.value : 'todos';
     }
 
-    // 4. Configuração dos Eventos de Filtro
-    // Quando mudar Turma ou Dia, precisamos atualizar a lista de horários antes de carregar
-    selectTurma?.addEventListener('change', () => {
-        atualizarOpcoesHorario();
-        carregarAlunos();
-    });
+    // EVENTOS COM DEBOUNCE NA PESQUISA
+    if (inputPesquisa) inputPesquisa.addEventListener('input', debounce(carregarAlunos, 300));
+    
+    selectTurma?.addEventListener('change', () => { atualizarOpcoesHorario(); carregarAlunos(); });
+    selectDia?.addEventListener('change', () => { atualizarOpcoesHorario(); carregarAlunos(); });
+    selectHorario?.addEventListener('change', carregarAlunos);
 
-    selectDia?.addEventListener('change', () => {
-        atualizarOpcoesHorario();
-        carregarAlunos();
-    });
-
-    // Outros filtros que não mudam a lista de opções, apenas filtram
-    ['pesquisa', 'horario'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', carregarAlunos);
-    });
-
-    // --- RELATÓRIOS (Mantidos como no seu original) ---
-
-    btnTermino?.addEventListener('click', async () => {
+    // RELATÓRIOS
+    document.getElementById('btnTermino')?.addEventListener('click', async () => {
         const hojeISO = new Date().toISOString().split('T')[0];
         const limite = new Date();
-        limite.setDate(new Date().getDate() + 29);
+        limite.setDate(limite.getDate() + 29);
         const dataLimite = limite.toISOString().split('T')[0];
 
-        const { data, error } = await _supabase.from('alunos')
+        const { data } = await _supabase.from('alunos')
             .select('nome, turma, dia_aula, data_termino')
-            .gte('data_termino', hojeISO)
-            .lte('data_termino', dataLimite)
-            .order('data_termino', { ascending: true });
+            .gte('data_termino', hojeISO).lte('data_termino', dataLimite).order('data_termino');
 
         if (data?.length > 0) {
             const linhas = data.map(a => [a.nome.toUpperCase(), a.turma, a.dia_aula, formatarDataBR(a.data_termino)]);
@@ -564,19 +471,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    btnFaltas?.addEventListener('click', async () => {
+    document.getElementById('btnFaltas')?.addEventListener('click', async () => {
         const { data } = await _supabase.from('alunos').select('nome, turma, dia_aula, frequencia(data_presenca)');
         const filtrados = data.filter(a => calcularStatusFrequencia(a.frequencia) === "Muitas Faltas").map(a => {
-            const datas = a.frequencia.map(f => new Date(f.data_presenca));
-            const ultima = datas.length ? new Date(Math.max(...datas)).toISOString().split('T')[0] : null;
+            const ultima = obterUltimaDataISO(a.frequencia);
             return [a.nome.toUpperCase(), a.turma, a.dia_aula, ultima ? formatarDataBR(ultima) : "Sem Registro"];
         });
-
         filtrados.length ? 
             gerarTabelaPDF("Relatório de Evasão", ["Nome", "Turma", "Dia", "Última Presença"], filtrados, "faltas", [0, 0, 0]) : 
             Swal.fire('Ótima notícia', 'Nenhum aluno com faltas críticas!', 'success');
     });
 
-    // Carga inicial de dados
     carregarAlunos();
 });
