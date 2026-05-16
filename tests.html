@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste de Chat Individual</title>
+    <title>Chat Real - Equipa RPS</title>
     <style>
         body { font-family: 'Poppins', sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; }
         .chat-wrapper { display: flex; width: 100%; max-width: 750px; height: 550px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
         
-        /* Lista de Contatos (Esquerda) */
+        /* Barra Lateral (Contactos) */
         .contacts-sidebar { width: 250px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fcfcfc; }
-        .sidebar-header { padding: 15px; background: #222; color: white; font-weight: bold; font-size: 0.9rem; }
+        .sidebar-header { padding: 15px; background: #111; color: white; font-weight: bold; font-size: 0.85rem; border-bottom: 2px solid #28a745; }
         .contacts-list { flex: 1; overflow-y: auto; }
         .contact-item { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; cursor: pointer; display: flex; flex-direction: column; transition: 0.2s; }
         .contact-item:hover { background: #f0f0f0; }
-        .contact-item.active { background: #e8f4fd; border-left: 4px solid #007bff; }
-        .contact-name { font-weight: 600; font-size: 0.9rem; color: #333; }
-        .contact-status { font-size: 0.7rem; color: #28a745; }
+        .contact-item.active { background: #e8f4fd; border-left: 4px solid #28a745; }
+        .contact-name { font-weight: 600; font-size: 0.9rem; color: #333; text-transform: uppercase; }
+        .contact-status { font-size: 0.7rem; color: #666; }
 
-        /* Janela de Conversa (Direita) */
+        /* Área da Conversa */
         .chat-main { flex: 1; display: flex; flex-direction: column; background: #fafafa; }
-        .chat-header { padding: 15px; background: #000; color: white; font-weight: bold; }
+        .chat-header { padding: 15px; background: #000; color: white; font-weight: bold; font-size: 0.95rem; }
         .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
-        /* Balões de Mensagem */
+        /* Balões */
         .msg-box { padding: 8px 12px; border-radius: 8px; max-width: 75%; width: fit-content; font-size: 0.9rem; line-height: 1.4; }
-        .msg-box.me { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 1px; }
+        .msg-box.me { background: #28a745; color: white; align-self: flex-end; border-bottom-right-radius: 1px; }
         .msg-box.other { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 1px; }
         
         .chat-input-area { display: flex; padding: 12px; border-top: 1px solid #eee; background: white; gap: 8px; }
@@ -39,83 +39,92 @@
 
 <div class="chat-wrapper">
     <div class="contacts-sidebar">
-        <div class="sidebar-header" id="identificacao-usuario">Minha Conta: Carregando...</div>
+        <div class="sidebar-header" id="identificacao-usuario">Utilizador: A carregar...</div>
         <div class="contacts-list" id="lista-contatos">
-            </div>
+            <p style="text-align: center; font-size: 0.8rem; color: #999; margin-top: 20px;">A carregar equipa...</p>
+        </div>
     </div>
 
     <div class="chat-main">
-        <div class="chat-header" id="nome-chat-ativo">Selecione um contato para conversar</div>
+        <div class="chat-header" id="nome-chat-ativo">Selecione um colega de equipa</div>
         <div class="chat-messages" id="zona-mensagens"></div>
         <form class="chat-input-area" id="form-chat">
-            <input type="text" id="input-mensagem" placeholder="Escolha um contato primeiro..." disabled required autocomplete="off">
+            <input type="text" id="input-mensagem" placeholder="Selecione um contacto..." disabled required autocomplete="off">
             <button type="submit" id="btn-enviar" disabled>Enviar</button>
         </form>
     </div>
 </div>
 
 <script>
+    // --- CONEXÃO COM O TEU SUPABASE ---
     const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
     const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // --- SIMULAÇÃO DE QUEM ESTÁ LOGADO ---
-    // Na Aba 1, deixe como "Carlos". Na Aba 2 (ou janela anônima), mude para "Amanda" para testar o envio entre eles!
-    const usuarioSistema = JSON.parse(sessionStorage.getItem('usuario_logado')) || { nome: "Carlos", cargo: "Coordenador" };
-    const MEU_ID = usuarioSistema.nome; 
-
-    // Lista fictícia da equipe (No sistema real, buscaremos da sua tabela de usuários cadastrados)
-    const equipeEmpresa = [
-        { id: "Carlos", nome: "Carlos", cargo: "Coordenador" },
-        { id: "Amanda", nome: "Amanda", cargo: "Professora" },
-        { id: "Bruno", nome: "Bruno", cargo: "Administrativo" }
-    ];
+    // Captura o utilizador real logado no teu sistema (sessionStorage)
+    const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
+    
+    // Se abrir o ficheiro solto sem login, ele assume "Admin" (que existe na tua tabela) para testes
+    const MEU_ID = usuarioAtivo ? usuarioAtivo.nome : "Admin"; 
+    document.getElementById('identificacao-usuario').textContent = `Logado como: ${MEU_ID}`;
 
     let contatoAtivoId = null;
     const zonaMensagens = document.getElementById('zona-mensagens');
     const inputMensagem = document.getElementById('input-mensagem');
     const btnEnviar = document.getElementById('btn-enviar');
 
-    document.getElementById('identificacao-usuario').textContent = `Logado como: ${MEU_ID}`;
+    // 1. BUSCA A EQUIPA DIRETAMENTE DA TABELA 'usuarios' (NO PLURAL)
+    async function carregarEquipaDoBanco() {
+        const { data: usuarios, error } = await _supabase
+            .from('usuarios') // Corrigido para plural
+            .select('nome, cargo')
+            .order('nome', { ascending: true });
 
-    // 1. Renderiza a lista de contatos na barra lateral (excluindo você mesmo)
-    function carregarContatos() {
+        if (error) {
+            console.error("Erro ao carregar equipa:", error.message);
+            document.getElementById('lista-contatos').innerHTML = `<p style="color:red; text-align:center; padding:10px;">Erro: ${error.message}</p>`;
+            return;
+        }
+
         const container = document.getElementById('lista-contatos');
         container.innerHTML = '';
         
-        equipeEmpresa.filter(membro => membro.id !== MEU_ID).forEach(membro => {
+        // Filtra para remover a si mesmo da lista de contactos lateral
+        usuarios.filter(u => u.nome !== MEU_ID).forEach(u => {
             const div = document.createElement('div');
             div.className = 'contact-item';
-            div.setAttribute('data-id', membro.id);
+            div.setAttribute('data-id', u.nome);
             div.innerHTML = `
-                <span class="contact-name">${membro.nome}</span>
-                <span class="contact-status">${membro.cargo}</span>
+                <span class="contact-name">${u.nome}</span>
+                <span class="contact-status">${u.cargo || 'Membro'}</span>
             `;
-            div.onclick = () => selecionarContato(membro.id, membro.nome);
+            div.onclick = () => selecionarContato(u.nome);
             container.appendChild(div);
         });
+
+        if (container.children.length === 0) {
+            container.innerHTML = '<p style="text-align: center; font-size: 0.8rem; color: #999; margin-top: 20px;">Nenhum outro utilizador encontrado.</p>';
+        }
     }
 
-    // 2. Ação ao clicar em um contato
-    async function selecionarContato(id, nome) {
-        contatoAtivoId = id;
-        document.getElementById('nome-chat-ativo').textContent = `Conversa com ${nome}`;
+    // 2. Selecionar Contacto
+    async function selecionarContato(nomeContato) {
+        contatoAtivoId = nomeContato;
+        document.getElementById('nome-chat-ativo').textContent = `Conversa com ${nomeContato}`;
         
-        // Ativa os inputs
         inputMensagem.disabled = false;
-        inputMensagem.placeholder = `Conversar com ${nome}...`;
+        inputMensagem.placeholder = `Escrever para ${nomeContato}...`;
         btnEnviar.disabled = false;
 
-        // Atualiza estilo visual na barra lateral
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
-        document.querySelector(`[data-id="${id}"]`).classList.add('active');
+        const elementoAtivo = document.querySelector(`[data-id="${nomeContato}"]`);
+        if (elementoAtivo) elementoAtivo.classList.add('active');
 
-        // Limpa a tela e carrega o histórico entre as duas pessoas
         zonaMensagens.innerHTML = '';
         await carregarHistoricoPrivado();
     }
 
-    // 3. Busca no banco apenas mensagens trocadas entre VOCÊ e o CONTATO ATIVO
+    // 3. Buscar Histórico de Mensagens entre os dois
     async function carregarHistoricoPrivado() {
         if (!contatoAtivoId) return;
 
@@ -130,10 +139,9 @@
         }
     }
 
-    // 4. Desenha o balão de mensagem (Esquerda ou Direita)
+    // 4. Desenhar o balão na tela
     function exibirMensagemNaTela(msg) {
         const div = document.createElement('div');
-        // Se o remetente for eu, o balão vai pra direita (classe 'me'), senão esquerda ('other')
         div.className = `msg-box ${msg.remetente_id === MEU_ID ? 'me' : 'other'}`;
         div.textContent = msg.conteudo_mensagem;
         
@@ -141,7 +149,7 @@
         zonaMensagens.scrollTop = zonaMensagens.scrollHeight;
     }
 
-    // 5. Envia a mensagem associando o remetente e o destinatário correto
+    // 5. Enviar Mensagem Real
     document.getElementById('form-chat').addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputMensagem.value.trim();
@@ -159,13 +167,12 @@
         if (error) console.error("Erro ao enviar:", error.message);
     });
 
-    // 6. REALTIME: Escuta todas as novas inserções na tabela de mensagens privadas
+    // 6. REALTIME: Atualização instantânea na tela
     _supabase
-        .channel('canal-privado')
+        .channel('canal-privado-real')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens_privadas' }, payload => {
             const novaMsg = payload.new;
             
-            // Só exibe a mensagem na tela em tempo real se ela fizer parte da conversa que está aberta no momento!
             const pertenceAConversaAtiva = 
                 (novaMsg.remetente_id === MEU_ID && novaMsg.destinatario_id === contatoAtivoId) ||
                 (novaMsg.remetente_id === contatoAtivoId && novaMsg.destinatario_id === MEU_ID);
@@ -177,7 +184,7 @@
         .subscribe();
 
     // Inicialização
-    carregarContatos();
+    carregarEquipaDoBanco();
 </script>
 
 </body>
