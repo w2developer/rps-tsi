@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Chat em Tempo Real</title>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 450px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 500px; overflow: hidden; }
+        .chat-header { background: #000; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 10px; }
+        .msg-box { background: #e9ecef; padding: 8px 12px; border-radius: 8px; max-width: 80%; width: fit-content; }
+        .msg-meta { font-size: 0.7rem; color: #666; font-weight: bold; margin-bottom: 2px; }
+        .msg-text { margin: 0; font-size: 0.9rem; color: #333; }
+        .chat-input-area { display: flex; padding: 10px; border-top: 1px solid #eee; background: white; gap: 8px; }
+        .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+        .chat-input-area button { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .chat-input-area button:hover { background: #218838; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">💬 Chat da Equipe (Teste)</div>
+    <div class="chat-messages" id="zona-mensagens">
+        </div>
+    <form class="chat-input-area" id="form-chat">
+        <input type="text" id="input-mensagem" placeholder="Digite uma mensagem..." required autocomplete="off">
+        <button type="submit">Enviar</button>
+    </form>
+</div>
+
+<script>
+    // --- CONFIGURAÇÃO SUPABASE ---
+    const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
+    const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
+    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    const zonaMensagens = document.getElementById('zona-mensagens');
+    const formChat = document.getElementById('form-chat');
+    const inputMensagem = document.getElementById('input-mensagem');
+
+    // Tenta pegar o usuário logado do seu sistema, senão define um padrão de teste
+    const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado')) || { nome: "Usuário Teste", cargo: "Desenvolvedor" };
+
+    // 1. Função para renderizar a mensagem na tela
+    function renderizarMensagem(msg) {
+        const div = document.createElement('div');
+        div.className = 'msg-box';
+        
+        div.innerHTML = `
+            <div class="msg-meta">${msg.remetente_nome} (${msg.remetente_cargo || 'Equipe'})</div>
+            <p class="msg-text">${msg.conteudo_mensagem}</p>
+        `;
+        
+        zonaMensagens.appendChild(div);
+        zonaMensagens.scrollTop = zonaMensagens.scrollHeight; // Rola para o final
+    }
+
+    // 2. Carregar o histórico recente ao abrir a página
+    async function carregarHistorico() {
+        const { data, error } = await _supabase
+            .from('mensagens_chat')
+            .select('*')
+            .order('criado_em', { ascending: true })
+            .limit(50);
+
+        if (!error && data) {
+            data.forEach(msg => renderizarMensagem(msg));
+        }
+    }
+
+    // 3. Enviar nova mensagem para o Supabase
+    formChat.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const texto = inputMensagem.value.trim();
+        if (!texto) return;
+
+        inputMensagem.value = ''; // Limpa o input imediatamente na interface
+
+        const { error } = await _supabase.from('mensagens_chat').insert([{
+            remetente_nome: usuarioAtivo.nome,
+            remetente_cargo: usuarioAtivo.cargo,
+            conteudo_mensagem: texto
+        }]);
+
+        if (error) console.error("Erro ao enviar:", error.message);
+    });
+
+    // 4. ATIVAR O REALTIME (Escutar o banco de dados)
+    _supabase
+        .channel('canal-teste-chat')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens_chat' }, payload => {
+            // Quando qualquer pessoa insere no banco, o Supabase avisa aqui instantaneamente
+            renderizarMensagem(payload.new);
+        })
+        .subscribe();
+
+    // Inicializa carregando o histórico anterior
+    carregarHistorico();
+</script>
+
+</body>
+</html>
