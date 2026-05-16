@@ -3,102 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste de Chat em Tempo Real</title>
+    <title>Teste de Chat Individual</title>
     <style>
         body { font-family: 'Poppins', sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; }
-        .chat-container { width: 100%; max-width: 450px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 500px; overflow: hidden; }
-        .chat-header { background: #000; color: white; padding: 15px; text-align: center; font-weight: bold; }
-        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 10px; }
-        .msg-box { background: #e9ecef; padding: 8px 12px; border-radius: 8px; max-width: 80%; width: fit-content; }
-        .msg-meta { font-size: 0.7rem; color: #666; font-weight: bold; margin-bottom: 2px; }
-        .msg-text { margin: 0; font-size: 0.9rem; color: #333; }
-        .chat-input-area { display: flex; padding: 10px; border-top: 1px solid #eee; background: white; gap: 8px; }
+        .chat-wrapper { display: flex; width: 100%; max-width: 750px; height: 550px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        /* Lista de Contatos (Esquerda) */
+        .contacts-sidebar { width: 250px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fcfcfc; }
+        .sidebar-header { padding: 15px; background: #222; color: white; font-weight: bold; font-size: 0.9rem; }
+        .contacts-list { flex: 1; overflow-y: auto; }
+        .contact-item { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; cursor: pointer; display: flex; flex-direction: column; transition: 0.2s; }
+        .contact-item:hover { background: #f0f0f0; }
+        .contact-item.active { background: #e8f4fd; border-left: 4px solid #007bff; }
+        .contact-name { font-weight: 600; font-size: 0.9rem; color: #333; }
+        .contact-status { font-size: 0.7rem; color: #28a745; }
+
+        /* Janela de Conversa (Direita) */
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: #fafafa; }
+        .chat-header { padding: 15px; background: #000; color: white; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Balões de Mensagem */
+        .msg-box { padding: 8px 12px; border-radius: 8px; max-width: 75%; width: fit-content; font-size: 0.9rem; line-height: 1.4; }
+        .msg-box.me { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 1px; }
+        .msg-box.other { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 1px; }
+        
+        .chat-input-area { display: flex; padding: 12px; border-top: 1px solid #eee; background: white; gap: 8px; }
         .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
-        .chat-input-area button { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .chat-input-area button:hover { background: #218838; }
+        .chat-input-area button { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .chat-input-area button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div class="chat-container">
-    <div class="chat-header">💬 Chat da Equipe (Teste)</div>
-    <div class="chat-messages" id="zona-mensagens">
-        </div>
-    <form class="chat-input-area" id="form-chat">
-        <input type="text" id="input-mensagem" placeholder="Digite uma mensagem..." required autocomplete="off">
-        <button type="submit">Enviar</button>
-    </form>
+<div class="chat-wrapper">
+    <div class="contacts-sidebar">
+        <div class="sidebar-header" id="identificacao-usuario">Minha Conta: Carregando...</div>
+        <div class="contacts-list" id="lista-contatos">
+            </div>
+    </div>
+
+    <div class="chat-main">
+        <div class="chat-header" id="nome-chat-ativo">Selecione um contato para conversar</div>
+        <div class="chat-messages" id="zona-mensagens"></div>
+        <form class="chat-input-area" id="form-chat">
+            <input type="text" id="input-mensagem" placeholder="Escolha um contato primeiro..." disabled required autocomplete="off">
+            <button type="submit" id="btn-enviar" disabled>Enviar</button>
+        </form>
+    </div>
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO SUPABASE ---
     const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
     const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+    // --- SIMULAÇÃO DE QUEM ESTÁ LOGADO ---
+    // Na Aba 1, deixe como "Carlos". Na Aba 2 (ou janela anônima), mude para "Amanda" para testar o envio entre eles!
+    const usuarioSistema = JSON.parse(sessionStorage.getItem('usuario_logado')) || { nome: "Carlos", cargo: "Coordenador" };
+    const MEU_ID = usuarioSistema.nome; 
+
+    // Lista fictícia da equipe (No sistema real, buscaremos da sua tabela de usuários cadastrados)
+    const equipeEmpresa = [
+        { id: "Carlos", nome: "Carlos", cargo: "Coordenador" },
+        { id: "Amanda", nome: "Amanda", cargo: "Professora" },
+        { id: "Bruno", nome: "Bruno", cargo: "Administrativo" }
+    ];
+
+    let contatoAtivoId = null;
     const zonaMensagens = document.getElementById('zona-mensagens');
-    const formChat = document.getElementById('form-chat');
     const inputMensagem = document.getElementById('input-mensagem');
+    const btnEnviar = document.getElementById('btn-enviar');
 
-    // Tenta pegar o usuário logado do seu sistema, senão define um padrão de teste
-    const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado')) || { nome: "Usuário Teste", cargo: "Desenvolvedor" };
+    document.getElementById('identificacao-usuario').textContent = `Logado como: ${MEU_ID}`;
 
-    // 1. Função para renderizar a mensagem na tela
-    function renderizarMensagem(msg) {
-        const div = document.createElement('div');
-        div.className = 'msg-box';
+    // 1. Renderiza a lista de contatos na barra lateral (excluindo você mesmo)
+    function carregarContatos() {
+        const container = document.getElementById('lista-contatos');
+        container.innerHTML = '';
         
-        div.innerHTML = `
-            <div class="msg-meta">${msg.remetente_nome} (${msg.remetente_cargo || 'Equipe'})</div>
-            <p class="msg-text">${msg.conteudo_mensagem}</p>
-        `;
-        
-        zonaMensagens.appendChild(div);
-        zonaMensagens.scrollTop = zonaMensagens.scrollHeight; // Rola para o final
+        equipeEmpresa.filter(membro => membro.id !== MEU_ID).forEach(membro => {
+            const div = document.createElement('div');
+            div.className = 'contact-item';
+            div.setAttribute('data-id', membro.id);
+            div.innerHTML = `
+                <span class="contact-name">${membro.nome}</span>
+                <span class="contact-status">${membro.cargo}</span>
+            `;
+            div.onclick = () => selecionarContato(membro.id, membro.nome);
+            container.appendChild(div);
+        });
     }
 
-    // 2. Carregar o histórico recente ao abrir a página
-    async function carregarHistorico() {
+    // 2. Ação ao clicar em um contato
+    async function selecionarContato(id, nome) {
+        contatoAtivoId = id;
+        document.getElementById('nome-chat-ativo').textContent = `Conversa com ${nome}`;
+        
+        // Ativa os inputs
+        inputMensagem.disabled = false;
+        inputMensagem.placeholder = `Conversar com ${nome}...`;
+        btnEnviar.disabled = false;
+
+        // Atualiza estilo visual na barra lateral
+        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+        document.querySelector(`[data-id="${id}"]`).classList.add('active');
+
+        // Limpa a tela e carrega o histórico entre as duas pessoas
+        zonaMensagens.innerHTML = '';
+        await carregarHistoricoPrivado();
+    }
+
+    // 3. Busca no banco apenas mensagens trocadas entre VOCÊ e o CONTATO ATIVO
+    async function carregarHistoricoPrivado() {
+        if (!contatoAtivoId) return;
+
         const { data, error } = await _supabase
-            .from('mensagens_chat')
+            .from('mensagens_privadas')
             .select('*')
-            .order('criado_em', { ascending: true })
-            .limit(50);
+            .or(`and(remetente_id.eq.${MEU_ID},destinatario_id.eq.${contatoAtivoId}),and(remetente_id.eq.${contatoAtivoId},destinatario_id.eq.${MEU_ID})`)
+            .order('criado_em', { ascending: true });
 
         if (!error && data) {
-            data.forEach(msg => renderizarMensagem(msg));
+            data.forEach(msg => exibirMensagemNaTela(msg));
         }
     }
 
-    // 3. Enviar nova mensagem para o Supabase
-    formChat.addEventListener('submit', async (e) => {
+    // 4. Desenha o balão de mensagem (Esquerda ou Direita)
+    function exibirMensagemNaTela(msg) {
+        const div = document.createElement('div');
+        // Se o remetente for eu, o balão vai pra direita (classe 'me'), senão esquerda ('other')
+        div.className = `msg-box ${msg.remetente_id === MEU_ID ? 'me' : 'other'}`;
+        div.textContent = msg.conteudo_mensagem;
+        
+        zonaMensagens.appendChild(div);
+        zonaMensagens.scrollTop = zonaMensagens.scrollHeight;
+    }
+
+    // 5. Envia a mensagem associando o remetente e o destinatário correto
+    document.getElementById('form-chat').addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputMensagem.value.trim();
-        if (!texto) return;
+        if (!texto || !contatoAtivoId) return;
 
-        inputMensagem.value = ''; // Limpa o input imediatamente na interface
+        inputMensagem.value = '';
 
-        const { error } = await _supabase.from('mensagens_chat').insert([{
-            remetente_nome: usuarioAtivo.nome,
-            remetente_cargo: usuarioAtivo.cargo,
+        const { error } = await _supabase.from('mensagens_privadas').insert([{
+            remetente_id: MEU_ID,
+            remetente_nome: MEU_ID,
+            destinatario_id: contatoAtivoId,
             conteudo_mensagem: texto
         }]);
 
         if (error) console.error("Erro ao enviar:", error.message);
     });
 
-    // 4. ATIVAR O REALTIME (Escutar o banco de dados)
+    // 6. REALTIME: Escuta todas as novas inserções na tabela de mensagens privadas
     _supabase
-        .channel('canal-teste-chat')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens_chat' }, payload => {
-            // Quando qualquer pessoa insere no banco, o Supabase avisa aqui instantaneamente
-            renderizarMensagem(payload.new);
+        .channel('canal-privado')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens_privadas' }, payload => {
+            const novaMsg = payload.new;
+            
+            // Só exibe a mensagem na tela em tempo real se ela fizer parte da conversa que está aberta no momento!
+            const pertenceAConversaAtiva = 
+                (novaMsg.remetente_id === MEU_ID && novaMsg.destinatario_id === contatoAtivoId) ||
+                (novaMsg.remetente_id === contatoAtivoId && novaMsg.destinatario_id === MEU_ID);
+
+            if (pertenceAConversaAtiva) {
+                exibirMensagemNaTela(novaMsg);
+            }
         })
         .subscribe();
 
-    // Inicializa carregando o histórico anterior
-    carregarHistorico();
+    // Inicialização
+    carregarContatos();
 </script>
 
 </body>
