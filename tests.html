@@ -3,31 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Real - Equipa RPS</title>
+    <title>Chat Avançado - RPS Sistema</title>
     <style>
         body { font-family: 'Poppins', sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; }
-        .chat-wrapper { display: flex; width: 100%; max-width: 750px; height: 550px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .chat-wrapper { display: flex; width: 100%; max-width: 850px; height: 600px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
         
-        /* Barra Lateral (Contactos) */
-        .contacts-sidebar { width: 250px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fcfcfc; }
+        /* Barra Lateral */
+        .contacts-sidebar { width: 280px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fcfcfc; }
         .sidebar-header { padding: 15px; background: #111; color: white; font-weight: bold; font-size: 0.85rem; border-bottom: 2px solid #28a745; }
         .contacts-list { flex: 1; overflow-y: auto; }
-        .contact-item { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; cursor: pointer; display: flex; flex-direction: column; transition: 0.2s; }
+        
+        /* Itens de Contacto Modificados */
+        .contact-item { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
         .contact-item:hover { background: #f0f0f0; }
         .contact-item.active { background: #e8f4fd; border-left: 4px solid #28a745; }
+        .contact-info { display: flex; flex-direction: column; gap: 2px; }
+        .contact-name-row { display: flex; align-items: center; gap: 6px; }
         .contact-name { font-weight: 600; font-size: 0.9rem; color: #333; text-transform: uppercase; }
         .contact-status { font-size: 0.7rem; color: #666; }
+        
+        /* Status Online/Offline */
+        .status-badge { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-badge.online { background: #28a745; box-shadow: 0 0 6px #28a745; }
+        .status-badge.offline { background: #bbb; }
+        
+        /* Notificação (Contador) */
+        .notif-badge { background: #dc3545; color: white; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 10px; display: none; }
 
-        /* Área da Conversa */
+        /* Área do Chat */
         .chat-main { flex: 1; display: flex; flex-direction: column; background: #fafafa; }
         .chat-header { padding: 15px; background: #000; color: white; font-weight: bold; font-size: 0.95rem; }
         .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
-        /* Balões */
-        .msg-box { padding: 8px 12px; border-radius: 8px; max-width: 75%; width: fit-content; font-size: 0.9rem; line-height: 1.4; }
+        /* Balões de Mensagem Avançados */
+        .msg-container { display: flex; flex-direction: column; width: 100%; }
+        .msg-box { padding: 8px 12px; border-radius: 8px; max-width: 70%; width: fit-content; font-size: 0.9rem; line-height: 1.4; position: relative; }
         .msg-box.me { background: #28a745; color: white; align-self: flex-end; border-bottom-right-radius: 1px; }
         .msg-box.other { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 1px; }
         
+        /* Footer do balão (Hora e Checks) */
+        .msg-footer { font-size: 0.65rem; display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 4px; opacity: 0.8; }
+        .msg-box.me .msg-footer { color: #fff; }
+        .msg-box.other .msg-footer { color: #666; }
+        .check-icon { font-weight: bold; }
+        .check-icon.read { color: #4fc3f7; } /* Azul se lida */
+
         .chat-input-area { display: flex; padding: 12px; border-top: 1px solid #eee; background: white; gap: 8px; }
         .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
         .chat-input-area button { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -40,9 +60,7 @@
 <div class="chat-wrapper">
     <div class="contacts-sidebar">
         <div class="sidebar-header" id="identificacao-usuario">Utilizador: A carregar...</div>
-        <div class="contacts-list" id="lista-contatos">
-            <p style="text-align: center; font-size: 0.8rem; color: #999; margin-top: 20px;">A carregar equipa...</p>
-        </div>
+        <div class="contacts-list" id="lista-contatos"></div>
     </div>
 
     <div class="chat-main">
@@ -56,58 +74,68 @@
 </div>
 
 <script>
-    // --- CONEXÃO COM O TEU SUPABASE ---
     const supabaseUrl = 'https://rtrjdiocezpityurvhpb.supabase.co';
     const supabaseKey = 'sb_publishable_Y9Jrgq2ylUEbcPGMG74fng_i5I0s5Oq';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Captura o utilizador real logado no teu sistema (sessionStorage)
     const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
-    
-    // Se abrir o ficheiro solto sem login, ele assume "Admin" (que existe na tua tabela) para testes
     const MEU_ID = usuarioAtivo ? usuarioAtivo.nome : "Admin"; 
     document.getElementById('identificacao-usuario').textContent = `Logado como: ${MEU_ID}`;
 
     let contatoAtivoId = null;
+    let listaUsuariosLocal = [];
+    let usuariosOnline = {}; // Controlado via Presence
+
     const zonaMensagens = document.getElementById('zona-mensagens');
     const inputMensagem = document.getElementById('input-mensagem');
     const btnEnviar = document.getElementById('btn-enviar');
 
-    // 1. BUSCA A EQUIPA DIRETAMENTE DA TABELA 'usuarios' (NO PLURAL)
-    async function carregarEquipaDoBanco() {
-        const { data: usuarios, error } = await _supabase
-            .from('usuarios') // Corrigido para plural
-            .select('nome, cargo')
-            .order('nome', { ascending: true });
+    // 1. CARREGAR EQUIPA E MAPEAR NOTIFICAÇÕES INICIAIS
+    async function inicializarChat() {
+        const { data: usuarios } = await _supabase.from('usuarios').select('nome, cargo');
+        if (!usuarios) return;
 
-        if (error) {
-            console.error("Erro ao carregar equipa:", error.message);
-            document.getElementById('lista-contatos').innerHTML = `<p style="color:red; text-align:center; padding:10px;">Erro: ${error.message}</p>`;
-            return;
-        }
+        listaUsuariosLocal = usuarios.filter(u => u.nome !== MEU_ID);
+        
+        // Puxa contagem de mensagens não lidas do banco de dados de uma vez só
+        const { data: naoLidas } = await _supabase
+            .from('mensagens_privadas')
+            .select('remetente_id')
+            .eq('destinatario_id', MEU_ID)
+            .eq('lida', false);
 
+        renderizarListaContatos(naoLidas || []);
+    }
+
+    function renderizarListaContatos(mensagensNaoLidas) {
         const container = document.getElementById('lista-contatos');
         container.innerHTML = '';
-        
-        // Filtra para remover a si mesmo da lista de contactos lateral
-        usuarios.filter(u => u.nome !== MEU_ID).forEach(u => {
+
+        listaUsuariosLocal.forEach(u => {
+            const qtdNaoLidas = mensagensNaoLidas.filter(m => m.remetente_id === u.nome).length;
+            const isOnline = usuariosOnline[u.nome];
+
             const div = document.createElement('div');
-            div.className = 'contact-item';
+            div.className = `contact-item ${contatoAtivoId === u.nome ? 'active' : ''}`;
             div.setAttribute('data-id', u.nome);
+            
             div.innerHTML = `
-                <span class="contact-name">${u.nome}</span>
-                <span class="contact-status">${u.cargo || 'Membro'}</span>
+                <div class="contact-info">
+                    <div class="contact-name-row">
+                        <span class="status-badge ${isOnline ? 'online' : 'offline'}" id="status-${u.nome}"></span>
+                        <span class="contact-name">${u.nome}</span>
+                    </div>
+                    <span class="contact-status">${u.cargo || 'Membro'}</span>
+                </div>
+                <span class="notif-badge" id="badge-${u.nome}" style="display: ${qtdNaoLidas > 0 ? 'block' : 'none'}">${qtdNaoLidas}</span>
             `;
+            
             div.onclick = () => selecionarContato(u.nome);
             container.appendChild(div);
         });
-
-        if (container.children.length === 0) {
-            container.innerHTML = '<p style="text-align: center; font-size: 0.8rem; color: #999; margin-top: 20px;">Nenhum outro utilizador encontrado.</p>';
-        }
     }
 
-    // 2. Selecionar Contacto
+    // 2. SELECIONAR CONTACTO E MARCAR COMO LIDO
     async function selecionarContato(nomeContato) {
         contatoAtivoId = nomeContato;
         document.getElementById('nome-chat-ativo').textContent = `Conversa com ${nomeContato}`;
@@ -117,39 +145,67 @@
         btnEnviar.disabled = false;
 
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
-        const elementoAtivo = document.querySelector(`[data-id="${nomeContato}"]`);
-        if (elementoAtivo) elementoAtivo.classList.add('active');
+        const el = document.querySelector(`[data-id="${nomeContato}"]`);
+        if (el) el.classList.add('active');
+
+        // Esconde a bolinha de notificação na UI
+        const badge = document.getElementById(`badge-${nomeContato}`);
+        if (badge) badge.style.display = 'none';
+
+        // Atualiza no banco que li todas as mensagens deste remetente
+        await _supabase
+            .from('mensagens_privadas')
+            .update({ lida: true })
+            .eq('remetente_id', nomeContato)
+            .eq('destinatario_id', MEU_ID);
 
         zonaMensagens.innerHTML = '';
         await carregarHistoricoPrivado();
     }
 
-    // 3. Buscar Histórico de Mensagens entre os dois
+    // 3. CARREGAR HISTÓRICO COM VISUAL DE CHECKS
     async function carregarHistoricoPrivado() {
         if (!contatoAtivoId) return;
 
-        const { data, error } = await _supabase
+        const { data } = await _supabase
             .from('mensagens_privadas')
             .select('*')
             .or(`and(remetente_id.eq.${MEU_ID},destinatario_id.eq.${contatoAtivoId}),and(remetente_id.eq.${contatoAtivoId},destinatario_id.eq.${MEU_ID})`)
             .order('criado_em', { ascending: true });
 
-        if (!error && data) {
-            data.forEach(msg => exibirMensagemNaTela(msg));
-        }
+        if (data) data.forEach(msg => exibirMensagemNaTela(msg));
     }
 
-    // 4. Desenhar o balão na tela
     function exibirMensagemNaTela(msg) {
         const div = document.createElement('div');
-        div.className = `msg-box ${msg.remetente_id === MEU_ID ? 'me' : 'other'}`;
-        div.textContent = msg.conteudo_mensagem;
+        div.className = 'msg-container';
+
+        const isMe = msg.remetente_id === MEU_ID;
+        const hora = new Date(msg.criado_em).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        // Regra do Check: Se for minha e estiver lida = ✓✓ Azul. Se não lida = ✓✓ Branco.
+        let checkHTML = '';
+        if (isMe) {
+            checkHTML = msg.lida 
+                ? `<span class="check-icon read">✓✓</span>` 
+                : `<span class="check-icon">✓✓</span>`;
+        }
+
+        div.innerHTML = `
+            <div class="msg-box ${isMe ? 'me' : 'other'}">
+                ${msg.conteudo_mensagem}
+                <div class="msg-footer">
+                    <span>${hora}</span>
+                    ${checkHTML}
+                </div>
+            </div>
+        `;
         
         zonaMensagens.appendChild(div);
         zonaMensagens.scrollTop = zonaMensagens.scrollHeight;
     }
 
-    // 5. Enviar Mensagem Real
+    // 4. ENVIAR MENSAGEM
     document.getElementById('form-chat').addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputMensagem.value.trim();
@@ -157,34 +213,90 @@
 
         inputMensagem.value = '';
 
-        const { error } = await _supabase.from('mensagens_privadas').insert([{
+        await _supabase.from('mensagens_privadas').insert([{
             remetente_id: MEU_ID,
             remetente_nome: MEU_ID,
             destinatario_id: contatoAtivoId,
-            conteudo_mensagem: texto
+            conteudo_mensagem: texto,
+            lida: false
         }]);
-
-        if (error) console.error("Erro ao enviar:", error.message);
     });
 
-    // 6. REALTIME: Atualização instantânea na tela
+    // 5. REALTIME MENSAGENS + CONFIRMAÇÕES DE LEITURA
     _supabase
-        .channel('canal-privado-real')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens_privadas' }, payload => {
-            const novaMsg = payload.new;
+        .channel('canal-privado-avancado')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'mensagens_privadas' }, payload => {
             
-            const pertenceAConversaAtiva = 
-                (novaMsg.remetente_id === MEU_ID && novaMsg.destinatario_id === contatoAtivoId) ||
-                (novaMsg.remetente_id === contatoAtivoId && novaMsg.destinatario_id === MEU_ID);
+            // CASO A: Nova mensagem inserida
+            if (payload.eventType === 'INSERT') {
+                const novaMsg = payload.new;
+                const daConversaAtiva = (novaMsg.remetente_id === MEU_ID && novaMsg.destinatario_id === contatoAtivoId) ||
+                                       (novaMsg.remetente_id === contatoAtivoId && novaMsg.destinatario_id === MEU_ID);
 
-            if (pertenceAConversaAtiva) {
-                exibirMensagemNaTela(novaMsg);
+                if (daConversaAtiva) {
+                    exibirMensagemNaTela(novaMsg);
+                    // Se eu recebi com o chat aberto, já marco como lido no banco imediatamente
+                    if (novaMsg.destinatario_id === MEU_ID) {
+                        _supabase.from('mensagens_privadas').update({ lida: true }).eq('id', novaMsg.id);
+                    }
+                } else if (novaMsg.destinatario_id === MEU_ID) {
+                    // Se recebi de outra pessoa, incrementa a notificação visual na barra lateral
+                    const badge = document.getElementById(`badge-${novaMsg.remetente_id}`);
+                    if (badge) {
+                        const atual = parseInt(badge.textContent) || 0;
+                        badge.textContent = atual + 1;
+                        badge.style.display = 'block';
+                    }
+                }
+            }
+            
+            // CASO B: O colega leu minhas mensagens (Evento de UPDATE da coluna 'lida')
+            if (payload.eventType === 'UPDATE') {
+                const msgModificada = payload.new;
+                if (msgModificada.remetente_id === MEU_ID && msgModificada.destinatario_id === contatoAtivoId && msgModificada.lida) {
+                    // Atualiza a tela limpando e recarregando para pintar os checks de azul instantaneamente
+                    zonaMensagens.innerHTML = '';
+                    carregarHistoricoPrivado();
+                }
             }
         })
         .subscribe();
 
-    // Inicialização
-    carregarEquipaDoBanco();
+    // 6. MOTOR DE STATUS: SUPABASE PRESENCE (Online / Offline instantâneo)
+    const canalPresenca = _supabase.channel('online-equipe');
+
+    canalPresenca
+        .on('presence', { event: 'sync' }, () => {
+            const estadoPresenca = canalPresenca.presenceState();
+            usuariosOnline = {};
+
+            // Mapeia quem está ativo na conexão agora
+            Object.keys(estadoPresenca).forEach(id => {
+                const info = estadoPresenca[id][0];
+                if (info && info.user) usuariosOnline[info.user] = true;
+            });
+
+            // Atualiza as bolinhas verdes/cinzentas na tela na hora
+            listaUsuariosLocal.forEach(u => {
+                const elStatus = document.getElementById(`status-${u.nome}`);
+                if (elStatus) {
+                    if (usuariosOnline[u.nome]) {
+                        elStatus.className = 'status-badge online';
+                    } else {
+                        elStatus.className = 'status-badge offline';
+                    }
+                }
+            });
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                // Envia a informação de que EU estou online para a rede do Supabase
+                await canalPresenca.track({ user: MEU_ID, online_at: new Date().toISOString() });
+            }
+        });
+
+    // Início
+    inicializarChat();
 </script>
 
 </body>
