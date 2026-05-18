@@ -9,12 +9,12 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
+        .header { display: none; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
         .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #34495e; color: white; }
-        .btn-add { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        th { background: #1e3061; color: white; }
+        .btn-add { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-edit { color: #2980b9; cursor: pointer; border: none; background: none; font-size: 1.2rem; }
         .btn-delete { color: #c0392b; cursor: pointer; border: none; background: none; font-size: 1.2rem; }
     </style>
@@ -25,12 +25,14 @@
     <h2><i class="ri-admin-line"></i> Gestão de Colaboradores</h2>
     <div>
         <span id="nome-admin"></span>
-        <button onclick="logout()" style="margin-left:15px; background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Sair</button>
     </div>
 </div>
 
 <div class="container">
-    <button class="btn-add" onclick="modalColaborador()"><i class="ri-user-add-line"></i> Novo Colaborador</button>
+    <div class="btns">
+        <button class="btn-add" onclick="modalColaborador()">   <i class="ri-user-add-line"></i> Novo Colaborador</button>
+        <button class="btn-add" style="background: red !important;" onclick="logout()">Sair</button>
+    </div>
     
     <table>
         <thead>
@@ -128,5 +130,6 @@
 
     carregarColaboradores();
 </script>
+<script src="../scripts/chat-widget.js"></script>
 </body>
 </html>
