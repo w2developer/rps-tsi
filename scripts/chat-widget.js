@@ -114,12 +114,18 @@
             if (chatContainer.classList.contains('active')) {
                 rpsGlobalBadge.style.display = 'none';
             } else {
+                conversationView.classList.add('rps-hidden');
+                contactsView.classList.remove('rps-hidden');
+                contatoAtivoId = null;
                 atualizarContadorGlobal();
             }
         });
         
         closeChat.addEventListener('click', () => {
             chatContainer.classList.remove('active');
+            conversationView.classList.add('rps-hidden');
+            contactsView.classList.remove('rps-hidden');
+            contatoAtivoId = null;
             atualizarContadorGlobal();
         });
 
