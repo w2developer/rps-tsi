@@ -11,7 +11,6 @@
 
     <!-- Scripts -->
     <script type="module" src="/scripts/main.js" defer></script>
-    <script src="/scripts/loader.js"></script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -130,30 +129,37 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const usuarioLogadoSpan = document.getElementById('usuario-logado');
-    const logoutButton = document.getElementById('logout-button');
 
-    // 1. Recupera os dados salvos no login
-    const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
+    window.addEventListener('load', function() {
+        const loaderBox = document.querySelector('.box-loader');
+        if (loaderBox) {
+            loaderBox.style.display = 'none';
+        }
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        const usuarioLogadoSpan = document.getElementById('usuario-logado');
+        const logoutButton = document.getElementById('logout-button');
 
-    // 2. Exibe o nome do usuário se ele existir
-    if (usuarioAtivo && usuarioLogadoSpan) {
-        usuarioLogadoSpan.textContent = `${usuarioAtivo.nome}`;
-    }
+        // 1. Recupera os dados salvos no login
+        const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
 
-    // 3. Função de Logout
-    if (logoutButton) {
-        logoutButton.addEventListener('click', () => {
-            // Remove os dados da sessão
-            sessionStorage.removeItem('usuario_logado');
-            
-            // Redireciona para a página de login
-            // Como o index está na raiz e o login em pages/, o caminho é 'pages/login.html'
-            window.location.href = 'pages/login.html';
-        });
-    }
-});
+        // 2. Exibe o nome do usuário se ele existir
+        if (usuarioAtivo && usuarioLogadoSpan) {
+            usuarioLogadoSpan.textContent = `${usuarioAtivo.nome}`;
+        }
+
+        // 3. Função de Logout
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                // Remove os dados da sessão
+                sessionStorage.removeItem('usuario_logado');
+                
+                // Redireciona para a página de login
+                // Como o index está na raiz e o login em pages/, o caminho é 'pages/login.html'
+                window.location.href = 'pages/login.html';
+            });
+        }
+    });
 </script>
 
 <script src="./scripts/chat-widget.js"></script>
