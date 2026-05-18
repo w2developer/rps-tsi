@@ -484,3 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     carregarAlunos();
 });
+
+
+// Atualização da lista automatica
+setInterval(carregarAlunos, 30000);
