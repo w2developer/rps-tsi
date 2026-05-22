@@ -129,6 +129,7 @@
             conversationView.classList.add('rps-hidden');
             contactsView.classList.remove('rps-hidden');
             contatoAtivoId = null;
+            rpsMessagesZone.innerHTML = "";
             atualizarContadorGlobal();
         });
 
@@ -136,6 +137,7 @@
             conversationView.classList.add('rps-hidden');
             contactsView.classList.remove('rps-hidden');
             contatoAtivoId = null;
+            rpsMessagesZone.innerHTML = "";
             atualizarContadorGlobal();
         });
 
