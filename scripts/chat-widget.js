@@ -104,10 +104,13 @@
             if (total > 0 && !chatContainer.classList.contains('active')) {
                 rpsGlobalBadge.textContent = total;
                 rpsGlobalBadge.style.display = 'flex';
+                document.title = `( ${total} ) RPS | Relatório Pedagógico Semanal`
             } else {
                 rpsGlobalBadge.style.display = 'none';
+                document.title = `RPS | Relatório Pedagógico Semanal`
             }
         }
+
 
         chatBtn.addEventListener('click', () => {
             chatContainer.classList.toggle('active');
@@ -392,7 +395,6 @@
                     await canalPresenca.track({ user: MEU_ID, online_at: new Date().toISOString() });
                 }
             });
-
         inicializarChat();
     }
 })();
