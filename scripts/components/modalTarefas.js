@@ -12,6 +12,7 @@ function formatarDataHoraBR(dataISO) {
 
 export async function abrirModalTarefas(alunoId, supabase) {
     // 1. Cria e mostra o modal IMEDIATAMENTE
+    const usuario = JSON.parse(sessionStorage.getItem('usuario_logado'));
     const modalDiv = document.createElement('div');
     modalDiv.className = 'modal';
     modalDiv.id = 'modal-tarefas';
@@ -40,6 +41,7 @@ export async function abrirModalTarefas(alunoId, supabase) {
                             <tr>
                                 <th>Tarefa</th>
                                 <th>Criada em</th> 
+                                <th>Criada por</th>
                                 <th style="text-align: center;">Ações</th>
                             </tr>
                         </thead>
@@ -77,6 +79,7 @@ export async function abrirModalTarefas(alunoId, supabase) {
         <tr style="${t.concluida ? 'opacity: 0.5; text-decoration: line-through;' : ''}">
             <td style="white-space: wrap;">${t.descricao}</td>
             <td style="font-size: 0.85rem; color: #666;">${formatarDataHoraBR(t.criado_em)}</td>
+            <td>${t.criado_por || "---"}</td>
             <td class="operacoes" style="justify-content: center;">
                 ${!t.concluida ? `
                     <button class="btn-presenca" onclick="window.concluirTarefa(${t.id}, ${alunoId})">
@@ -97,7 +100,7 @@ export async function abrirModalTarefas(alunoId, supabase) {
     document.getElementById('form-tarefa').onsubmit = async (e) => {
         e.preventDefault();
         const descInput = document.getElementById('desc-tarefa');
-        const { error: insError } = await supabase.from('tarefas').insert([{ aluno_id: alunoId, descricao: descInput.value }]);
+        const { error: insError } = await supabase.from('tarefas').insert([{ aluno_id: alunoId, descricao: descInput.value, criado_por: usuario.nome }]);
 
         if (!insError) {
             modalDiv.remove();
