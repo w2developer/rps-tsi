@@ -71,7 +71,7 @@
                         </div>
                         <div class="rps-messages-zone" id="rpsMessagesZone"></div>
                         <form class="rps-chat-input-form" id="rpsChatForm">
-                            <input type="text" id="rpsInputMsg" placeholder="Sua mensagem..." required autocomplete="off">
+                            <textarea id="rpsInputMsg" placeholder="Sua mensagem..." required rows="2"></textarea>
                             <button type="submit" id="rpsSendBtn"><i class="ri-send-plane-2-fill"></i></button>
                         </form>
                     </div>
@@ -229,6 +229,7 @@
 
             const isMe = msg.remetente_id === MEU_ID;
             const hora = new Date(msg.criado_em).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const diaMes = new Date(msg.criado_em).toLocaleDateString([], {day: '2-digit', month: '2-digit'});
             
             let checkHTML = '';
             if (isMe) {
@@ -246,7 +247,7 @@
                         <div class="rps-msg-box me">
                             <span class="rps-msg-text">${msg.conteudo_mensagem}</span>
                             <div class="rps-msg-footer">
-                                <span>${hora}</span>
+                                <span>${diaMes} - ${hora}</span>
                                 ${checkHTML}
                             </div>
                         </div>
@@ -257,7 +258,7 @@
                     <div class="rps-msg-box other">
                         <span class="rps-msg-text">${msg.conteudo_mensagem}</span>
                         <div class="rps-msg-footer">
-                            <span>${hora}</span>
+                            <span>${diaMes} - ${hora}</span>
                         </div>
                     </div>
                 `;

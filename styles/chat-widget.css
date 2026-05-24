@@ -337,26 +337,50 @@
    Formulário de Entrada de Texto (Input e Envio)
    ========================================================================== */
 .rps-chat-input-form {
+    gap: 10px;
+    display: flex;
     padding: 10px 15px;
+    align-items: center;
     background: #ffffff;
     border-top: 1px solid #e9ecef;
-    display: flex;
-    gap: 10px;
-    align-items: center;
 }
 
-.rps-chat-input-form input {
+.rps-chat-input-form textarea {
     flex: 1;
-    border: 1px solid #ced4da;
-    padding: 10px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-family: inherit;
+    resize: none;
     outline: none;
+    font-size: 13px;
+    padding: 10px 10px;
+    border-radius: 8px;
+    font-family: inherit;
+    border: 1px solid #ced4da;
     transition: border-color 0.2s;
 }
 
-.rps-chat-input-form input:focus {
+#rpsInputMsg {
+  resize: none;
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
+
+#rpsInputMsg::-webkit-scrollbar {
+  width: 6px;
+}
+
+#rpsInputMsg::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#rpsInputMsg::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 3px;
+}
+
+#rpsInputMsg::-webkit-scrollbar-thumb:hover {
+  background-color: #666;
+}
+
+.rps-chat-input-form textarea:focus {
     border-color: #007bff;
 }
 
