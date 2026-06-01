@@ -37,7 +37,7 @@
 .filtros-e-adicionar .filtros select:hover {
     border-color: #999;
 }
-.filtros-e-adicionar .btn-adicionar {
+.btn-adicionar {
     border: none;
     display: flex;
     color: #fff;
@@ -48,6 +48,6 @@
     transition: .3s ease;
     background-color: #1e3061;
 }
-.filtros-e-adicionar .btn-adicionar:hover {
+.btn-adicionar:hover {
     background-color: #10172A;
 }

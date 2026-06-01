@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPS | Relatório Pedagógico Semanal</title>
+    <title>RPS | Concludentes</title>
     <link rel="shortcut icon" href="/assets/logo.svg" type="image/x-icon">
 
     <!-- Styles -->
     <link rel="stylesheet" href="/styles/main.css">
 
     <!-- Scripts -->
-    <script type="module" src="/scripts/main.js" defer></script>
+    <script type="module" src="/scripts/scp-concludentes.js" defer></script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,8 +41,8 @@
     <header>
         <nav>
             <ul>
-                <li><a href="/" class="active-menu">Pagina Inicial</a></li>
-                <li><a href="/pages/logs.html">Logs</a></li>
+                <li><a href="/">Pagina Inicial</a></li>
+                <li><a href="/pages/concludentes.html" class="active-menu">Concluídos</a></li>
             </ul>
         </nav>
         <div class="logout">
@@ -53,29 +53,8 @@
 
     <div class="container">
         <div class="filtros-e-adicionar">
-            <div class="filtros">
-                <div class="selecionar turma">
-                    <label for="turma">Turma:</label>
-                    <select id="turma">
-                        <option value="todos" selected>Todas</option>
-                        <option value="manha">Manhã</option>
-                        <option value="tarde">Tarde</option>
-                    </select>
-                </div>
-                <div class="selecionar dia">
-                    <label for="dia">Dia:</label>
-                    <select id="dia">
-                        <option value="todos">Todos</option>
-                        <option value="segunda" selected>Segunda/Terça</option>
-                        <option value="quarta">Quarta/Quinta</option>
-                        <option value="sexta">Sexta</option>
-                        <option value="sabado">Sábado</option>
-                    </select>
-                </div>
-                <div class="selecionar horario">
-                    <label for="horario">Horário:</label>
-                    <select id="horario"></select>
-                </div>
+            <div class="pesquisa">
+                <input type="text" id="pesquisa" placeholder="Pesquisar aluno...">
             </div>
             <div class="adicionar-aluno">
                 <button class="btn-adicionar" onclick="abrirModalCadastro()">
@@ -84,25 +63,10 @@
             </div>
         </div>
         
-        <div class="section-pesquisa-relatorios">
-            <div class="pesquisa">
-                <input type="text" id="pesquisa" placeholder="Pesquisar aluno...">
-            </div>
-            <div class="acoes-relatorio">
-                <button id="btnTermino" class="btn-pdf btn-termino">
-                    Alunos com Término Proximo (PDF)
-                </button>
-
-                <button id="btnFaltas" class="btn-pdf btn-falta">
-                    Relatório de Faltas Críticas (PDF)
-                </button>
-            </div>
-        </div>
-        
         <table class="listagem">
             <colgroup>
                 <col style="width: 30%;">
-                <col style="width: 13%;">
+                <!-- <col style="width: 13%;"> -->
                 <col style="width: 13%;">
                 <col style="width: 13%;">
                 <col style="width: 13%;">
@@ -113,11 +77,11 @@
             <thead>
                 <tr>
                     <th>Nome (A-Z)</th>
-                    <th>Data de Término</th>
-                    <th>Tempo Para Conclusão</th>
-                    <th>Última Presença <span id="qtd-presente"></span></th>
-                    <th>Status da Frequência</th>
-                    <th>Certificado Premium</th>
+                    <th>Usuário</th>
+                    <!-- <th>Usuário</th> -->
+                    <th>Curso Concluído</th>
+                    <th>Data de Conclusão</th>
+                    <th>Certificado</th>
                     <th>Operações</th>
                 </tr>
             </thead>
@@ -162,6 +126,6 @@
     });
 </script>
 
-<script src="./scripts/chat-widget.js"></script>
+<script src="/scripts/chat-widget.js"></script>
 </body>
 </html>
