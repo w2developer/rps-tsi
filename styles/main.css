@@ -63,4 +63,7 @@ body {
     body {
         display: none;
     }
+    html::after {
+        content: 'Erro: Se você estiver no celular, ative "Site para computador" no navegador e recarregue a página. O sistema precisa de tela maior para funcionar corretamente.';
+    }
 }
