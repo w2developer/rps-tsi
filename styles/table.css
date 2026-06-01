@@ -95,9 +95,6 @@ table thead th {
     position: relative;
     background: #17a2b8;
 }
-.operacoes .btn-observacao {
-    background: #6c757d;
-}
 .operacoes .btn-excluir {
     background: #dc3545;
 }

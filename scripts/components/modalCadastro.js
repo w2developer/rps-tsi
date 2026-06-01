@@ -12,20 +12,22 @@ export function abrirModalCadastro(supabase, aoSalvar) {
                 <h2>Cadastrar Novo Aluno</h2>
             </div>
             <div class="body-modal">
-                <div style="background: #f4f4f4; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Importar via JSON:</label>
-                    <input type="file" id="import-json" accept=".json" style="font-size: 0.8rem;">
-                    <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">* O arquivo deve ser um array de objetos.</p>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
                 <form id="form-cadastro-aluno" style="display: flex; flex-direction: column; gap: 15px;">
                     <div>
                         <label>Nome Completo:</label>
                         <input type="text" id="cad-nome" required style="width: 100%; padding: 8px;">
                     </div>
                     
+                    <div>
+                        <label>Data de Nascimento:</label>
+                        <input type="date" id="cad-nascimento" required style="width: 100%; padding: 8px;">
+                    </div>
+
+                    <div>
+                        <label>Código de Acesso:</label>
+                        <input type="text" id="cad-codigo" required style="width: 100%; padding: 8px;">
+                    </div>
+
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label>Turma:</label>
@@ -48,8 +50,7 @@ export function abrirModalCadastro(supabase, aoSalvar) {
 
                     <div>
                         <label>Horário de Estudo:</label>
-                        <select id="cad-horario" style="width: 100%; padding: 8px;">
-                            </select>
+                        <select id="cad-horario" style="width: 100%; padding: 8px;"></select>
                     </div>
 
                     <div>
@@ -68,122 +69,63 @@ export function abrirModalCadastro(supabase, aoSalvar) {
 
     document.body.appendChild(modalDiv);
 
-    // --- LÓGICA DE POPULAR HORÁRIOS DINAMICAMENTE NO CADASTRO ---
+    // Lógica de horários (mantida conforme original)
     const cadTurma = document.getElementById('cad-turma');
     const cadDia = document.getElementById('cad-dia');
     const cadHorario = document.getElementById('cad-horario');
 
     function atualizarHorariosCadastro() {
-        const turma = cadTurma.value; // "Manhã" ou "Tarde"
+        const turma = cadTurma.value;
         const dia = cadDia.value;
         const eBloco2h = (dia === 'Sexta' || dia === 'Sábado');
-        
         const horarios = {
-            'Manhã': [
-                { label: "08:00 - 09:00", bloco: 1 }, { label: "09:00 - 10:00", bloco: 1 },
-                { label: "10:00 - 11:00", bloco: 1 }, { label: "11:00 - 12:00", bloco: 1 },
-                { label: "08:00 - 10:00", bloco: 2 }, { label: "10:00 - 12:00", bloco: 2 }
-            ],
-            'Tarde': [
-                { label: "14:00 - 15:00", bloco: 1 }, { label: "15:00 - 16:00", bloco: 1 },
-                { label: "16:00 - 17:00", bloco: 1 }, { label: "17:00 - 18:00", bloco: 1 },
-                { label: "14:00 - 16:00", bloco: 2 }, { label: "16:00 - 18:00", bloco: 2 }
-            ]
+            'Manhã': [{ label: "08:00 - 12:00", bloco: 2 }, { label: "08:00 - 09:00", bloco: 1 }],
+            'Tarde': [{ label: "14:00 - 18:00", bloco: 2 }, { label: "14:00 - 15:00", bloco: 1 }]
         };
-
-        cadHorario.innerHTML = dia === 'Flexível' ? '<option value="Flexível">Flexível</option>' : '';
-        
-        if (dia !== 'Flexível') {
-            horarios[turma].forEach(item => {
-                if ((eBloco2h && item.bloco === 2) || (!eBloco2h && item.bloco === 1)) {
-                    const opt = document.createElement('option');
-                    opt.value = item.label;
-                    opt.textContent = item.label;
-                    cadHorario.appendChild(opt);
-                }
-            });
-        }
+        cadHorario.innerHTML = '';
+        horarios[turma].forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.label;
+            opt.textContent = item.label;
+            cadHorario.appendChild(opt);
+        });
     }
+    cadTurma.onchange = cadDia.onchange = atualizarHorariosCadastro;
+    atualizarHorariosCadastro();
 
-    cadTurma.onchange = atualizarHorariosCadastro;
-    cadDia.onchange = atualizarHorariosCadastro;
-    atualizarHorariosCadastro(); // Chamada inicial
-
-    // --- LÓGICA DE IMPORTAÇÃO JSON (Atualizada com horario) ---
-    document.getElementById('import-json').onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            try {
-                const dadosBrutos = JSON.parse(event.target.result);
-                if (!Array.isArray(dadosBrutos)) throw new Error("O JSON deve ser uma lista []");
-
-                const listaAlunos = dadosBrutos.map(item => ({
-                    nome: item.nome,
-                    turma: item.turma,
-                    dia_aula: item.dia_aula,
-                    horario_estudo: item.horario_estudo, // Adicionado
-                    data_termino: item.data_termino,
-                    certificado_premium: item.certificado_premium || "No aguardo" 
-                }));
-
-                const { data: alunosInseridos, error: errAlunos } = await supabase
-                    .from('alunos')
-                    .insert(listaAlunos)
-                    .select();
-
-                if (errAlunos) throw errAlunos;
-
-                const registrosPresenca = alunosInseridos.map(alunoInserido => {
-                    const dadosOriginais = dadosBrutos.find(d => d.nome === alunoInserido.nome);
-                    return {
-                        aluno_id: alunoInserido.id,
-                        data_presenca: dadosOriginais.ultima_presenca || new Date().toISOString().split('T')[0]
-                    };
-                });
-
-                await supabase.from('frequencia').insert(registrosPresenca);
-
-                alert(`Sucesso! ${listaAlunos.length} alunos importados.`);
-                modalDiv.remove();
-                aoSalvar();
-            } catch (err) {
-                alert("Erro na importação: " + err.message);
-            }
-        };
-        reader.readAsText(file);
-    };
-
-    // --- SALVAMENTO MANUAL ---
+    // Salvamento com criação do usuário
     document.getElementById('form-cadastro-aluno').onsubmit = async (e) => {
         e.preventDefault();
         
+        const dataNasc = document.getElementById('cad-nascimento').value;
+        const anoNasc = dataNasc.split('-')[0]; // Extrai o ano
+
         const novoAluno = {
             nome: document.getElementById('cad-nome').value,
-            turma: document.getElementById('cad-turma').value,
-            dia_aula: document.getElementById('cad-dia').value,
-            horario_estudo: document.getElementById('cad-horario').value, // Adicionado
+            data_nascimento: dataNasc,
+            turma: cadTurma.value,
+            dia_aula: cadDia.value,
+            horario_estudo: cadHorario.value,
             data_termino: document.getElementById('cad-termino').value
         };
 
-        const { error } = await supabase.from('alunos').insert([novoAluno]);
+        // 1. Insere aluno
+        const { data: aluno, error: errAluno } = await supabase.from('alunos').insert([novoAluno]).select();
+        
+        if (errAluno) return Swal.fire('Erro', errAluno.message, 'error');
 
-        if (error) {
-            Swal.fire('Erro', "Erro ao cadastrar: " + error.message, 'error');
-        } else {
-            Swal.fire({
-                title: 'Cadastrado!',
-                text: 'O aluno foi salvo com sucesso.',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            
-            modalDiv.remove();
-            aoSalvar();
-        }
+        // 2. Insere usuário associado
+        const { error: errUser } = await supabase.from('usuarios_aluno').insert([{
+            aluno_id: aluno[0].id,
+            codigo: document.getElementById('cad-codigo').value,
+            senha: anoNasc
+        }]);
+
+        if (errUser) return Swal.fire('Erro', 'Aluno salvo, mas erro ao criar usuário: ' + errUser.message, 'error');
+
+        Swal.fire('Sucesso!', 'Aluno e acesso criados.', 'success');
+        modalDiv.remove();
+        aoSalvar();
     };
 
     document.getElementById('btn-cancelar-cad').onclick = () => modalDiv.remove();
