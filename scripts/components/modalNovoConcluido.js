@@ -19,16 +19,9 @@ export function abrirModalNovoConcluido(supabase, aoSalvar) {
                     
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
-                            <label>Usuário:</label>
-                            <input type="text" id="cad-usuario" style="width: 100%; padding: 8px;">
-                        </div>
-                        <div style="flex: 1;">
                             <label>Curso Concluído:</label>
                             <input type="text" id="cad-curso" style="width: 100%; padding: 8px;">
                         </div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label>Turma:</label>
                             <select id="cad-turma" style="width: 100%; padding: 8px;">
@@ -36,6 +29,9 @@ export function abrirModalNovoConcluido(supabase, aoSalvar) {
                                 <option value="Tarde">Tarde</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label>Dia da Aula:</label>
                             <select id="cad-dia" style="width: 100%; padding: 8px;">
@@ -46,12 +42,12 @@ export function abrirModalNovoConcluido(supabase, aoSalvar) {
                                 <option value="Flexível">Flexível</option>
                             </select>
                         </div>
+                        <div style="flex: 1;">
+                            <label>Horário de Estudo:</label>
+                            <select id="cad-horario" style="width: 100%; padding: 8px;"></select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label>Horário de Estudo:</label>
-                        <select id="cad-horario" style="width: 100%; padding: 8px;"></select>
-                    </div>
 
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
@@ -126,7 +122,7 @@ export function abrirModalNovoConcluido(supabase, aoSalvar) {
         
         const novoConcluido = {
             nome: document.getElementById('cad-nome').value,
-            usuario: document.getElementById('cad-usuario').value || null,
+            usuario: JSON.parse(sessionStorage.getItem('usuario_logado')).nome || null,
             curso_concluido: document.getElementById('cad-curso').value || null,
             dia_aula: cadDia.value || null,
             horario_estudo: cadHorario.value || null,
