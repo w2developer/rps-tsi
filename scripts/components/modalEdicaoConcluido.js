@@ -23,16 +23,9 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
 
                         <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
-                                <label>Usuário:</label>
-                                <input type="text" id="edit-usuario" style="width: 100%; padding: 8px;">
-                            </div>
-                            <div style="flex: 1;">
                                 <label>Curso Concluído:</label>
                                 <input type="text" id="edit-curso" style="width: 100%; padding: 8px;">
                             </div>
-                        </div>
-
-                        <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
                                 <label>Turma:</label>
                                 <select id="edit-turma" style="width: 100%; padding: 8px;">
@@ -40,6 +33,9 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
                                     <option value="Tarde">Tarde</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
                                 <label>Dia da Aula:</label>
                                 <select id="edit-dia" style="width: 100%; padding: 8px;">
@@ -50,11 +46,10 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
                                     <option value="Flexível">Flexível</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div>
-                            <label>Horário de Estudo:</label>
-                            <select id="edit-horario" style="width: 100%; padding: 8px;"></select>
+                            <div style="flex: 1;">
+                                <label>Horário de Estudo:</label>
+                                <select id="edit-horario" style="width: 100%; padding: 8px;"></select>
+                            </div>
                         </div>
 
                         <div style="display: flex; gap: 10px;">
@@ -140,7 +135,6 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
     // --- MAPEAMENTO DOS CAMPOS ---
     const campos = {
         nome: document.getElementById('edit-nome'),
-        usuario: document.getElementById('edit-usuario'),
         curso: document.getElementById('edit-curso'),
         turma: editTurma,
         dia: editDia,
@@ -151,7 +145,6 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
 
     // --- PREENCHIMENTO DOS DADOS ---
     campos.nome.value = concluido.nome || "";
-    campos.usuario.value = concluido.usuario || "";
     campos.curso.value = concluido.curso_concluido || "";
     campos.dia.value = concluido.dia_aula || "Segunda/Terça";
 
@@ -177,7 +170,6 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
     document.getElementById('btn-cancelar-edit').onclick = () => {
         const alterado = 
             campos.nome.value !== (concluido.nome || "") ||
-            campos.usuario.value !== (concluido.usuario || "") ||
             campos.curso.value !== (concluido.curso_concluido || "") ||
             campos.dia.value !== (concluido.dia_aula || "") ||
             campos.horario.value !== (concluido.horario_estudo || "") ||
@@ -205,7 +197,6 @@ export async function abrirModalEdicaoConcluido(id, supabase, aoSalvar) {
 
         const novosDados = {
             nome: campos.nome.value,
-            usuario: campos.usuario.value || null,
             curso_concluido: campos.curso.value || null,
             dia_aula: campos.dia.value || null,
             horario_estudo: campos.horario.value || null,
