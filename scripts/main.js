@@ -180,7 +180,7 @@ async function carregarAlunos() {
         const tr = document.createElement('tr');
         tr.className = `aluno ${presencaHoje ? 'presente-hoje' : ''}`;
         tr.innerHTML = `
-            <td>
+            <td title="${aluno.nome}">
                 ${aluno.nome}
                 <div style="font-size: 0.65rem; color: #666; margin-top: 2px;">
                     ${aluno.dia_aula} - ${exibirHorario}
