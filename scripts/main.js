@@ -229,6 +229,10 @@ async function carregarAlunos() {
                                 <i class="ri-edit-fill"></i>
                                 <span>Editar Aluno</span>
                             </button>
+                            <button onclick="iserirEmConcluidos(${aluno.id})">
+                                <i class="ri-external-link-line"></i>
+                                <span>Inserir em Concluídos</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -332,6 +336,71 @@ window.editarAluno = id => abrirModalEdicao(id, _supabase, async () => {
     await registrarLog('EDITAR_ALUNO', 'alunos', { aluno_id: id });
     carregarAlunos();
 });
+
+window.iserirEmConcluidos = async (id) => {
+    // Busca apenas os dados necessários do aluno
+    const { data: aluno, error: erroBusca } = await _supabase
+        .from('alunos')
+        .select('nome, dia_aula, horario_estudo')
+        .eq('id', id)
+        .single();
+
+    if (erroBusca || !aluno) {
+        return Swal.fire('Erro', 'Não foi possível encontrar os dados do aluno.', 'error');
+    }
+
+    // Configuração do SweetAlert com HTML e Datalist
+    Swal.fire({
+        title: `Concluir curso para ${aluno.nome}?`,
+        html: `
+            <input list="lista-cursos" id="input-curso" class="swal2-input" placeholder="Digite ou selecione o curso">
+            <datalist id="lista-cursos">
+                <option value="Ambientes Digitais Fast">
+                <option value="Inteligência Artificial Fast">
+                <option value="Informática Essencial">
+                <option value="Informática Avançada">
+                <option value="Informática Kids">
+            </datalist>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Salvar e Concluir',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const valor = document.getElementById('input-curso').value;
+            if (!valor) {
+                Swal.showValidationMessage('Você precisa selecionar ou digitar um curso!');
+            }
+            return valor;
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            const cursoSelecionado = result.value;
+            const hoje = new Date().toISOString().split('T')[0];
+            const usuarioLogado = JSON.parse(sessionStorage.getItem('usuario_logado'));
+            const nomeUsuario = usuarioLogado ? usuarioLogado.nome : "Desconhecido";
+
+            const { error: erroInsercao } = await _supabase
+                .from('concluidos')
+                .insert([{
+                    nome: aluno.nome,
+                    dia_aula: aluno.dia_aula,
+                    horario_estudo: aluno.horario_estudo,
+                    usuario: nomeUsuario,
+                    curso_concluido: cursoSelecionado,
+                    data_conclusao: hoje
+                }]);
+
+            if (erroInsercao) {
+                Swal.fire('Erro', `Não foi possível salvar: ${erroInsercao.message}`, 'error');
+                return;
+            }
+
+            await registrarLog('CONCLUIR_ALUNO', 'concluidos', { aluno: aluno.nome, curso: cursoSelecionado });
+            Swal.fire('Sucesso!', 'Aluno inserido em concluídos com sucesso.', 'success');
+            carregarAlunos();
+        }
+    });
+};
 
 window.abrirModalCadastro = () => abrirModalCadastro(_supabase, async () => {
     await registrarLog('CADASTRAR_ALUNO', 'alunos', { info: 'Novo aluno adicionado' });

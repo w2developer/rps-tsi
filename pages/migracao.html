@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migração Provisória de Dados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Migração em Massa via JSON</h1>
+        <p class="text-sm text-gray-600 mb-6">Página temporária para importação de planilhas convertidas em JSON.</p>
+
+        <div class="bg-gray-50 p-4 rounded mb-6 border border-gray-200">
+            <h2 class="text-sm font-semibold text-gray-700 mb-3">1. Credenciais do Supabase</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600">SUPABASE_URL:</label>
+                    <input type="text" id="sub-url" placeholder="https://your-project.supabase.co" class="w-full p-2 text-sm border rounded mt-1">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600">SUPABASE_ANON_KEY:</label>
+                    <input type="password" id="sub-key" placeholder="eyJhbGciOi..." class="w-full p-2 text-sm border rounded mt-1">
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-sm font-semibold text-gray-700 mb-2">2. Selecione o Arquivo JSON</h2>
+            <input type="file" id="arquivo-json" accept=".json" class="w-full p-3 bg-gray-50 border border-dashed border-gray-300 rounded cursor-pointer">
+            <p class="text-xs text-gray-500 mt-1">* Certifique-se de que o arquivo é um Array de Objetos `[ { ... }, { ... } ]`.</p>
+        </div>
+
+        <div id="painel-preview" class="hidden mb-6 bg-blue-50 p-4 rounded border border-blue-200">
+            <h3 class="text-sm font-bold text-blue-800 mb-1">Arquivo Carregado!</h3>
+            <p class="text-xs text-blue-700" id="info-registros">Total de registros encontrados: 0</p>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <button id="btn-processar" disabled class="bg-green-600 text-white px-6 py-2 rounded font-semibold text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto">
+                Iniciar Migração
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let dadosParaMigrar = [];
+
+        // --- CONTROLE DE INTERAÇÃO DOS ELEMENTOS ---
+        const inputUrl = document.getElementById('sub-url');
+        const inputKey = document.getElementById('sub-key');
+        const inputFile = document.getElementById('arquivo-json');
+        const btnProcessar = document.getElementById('btn-processar');
+        const painelPreview = document.getElementById('painel-preview');
+        const infoRegistros = document.getElementById('info-registros');
+
+        // --- FUNÇÃO PARA CONVERTER DATA PARA AAAA-MM-DD ---
+        function formatarDataParaAnoMesDia(valor) {
+            if (!valor) return null;
+            const dataStr = String(valor).trim();
+
+            // Se já estiver no formato correto (AAAA-MM-DD)
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dataStr)) {
+                return dataStr;
+            }
+
+            // Se estiver no formato brasileiro (DD/MM/AAAA)
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dataStr)) {
+                const [dia, mes, ano] = dataStr.split('/');
+                return `${ano}-${mes}-${dia}`;
+            }
+
+            // Tratamento genérico para outros formatos/timestamps
+            const dataObjeto = new Date(dataStr);
+            if (!isNaN(dataObjeto.getTime())) {
+                return dataObjeto.toISOString().split('T')[0];
+            }
+
+            return null;
+        }
+
+        // --- LEITURA DO ARQUIVO JSON ---
+        inputFile.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const json = JSON.parse(event.target.result);
+                    
+                    if (!Array.isArray(json)) {
+                        throw new Error("O JSON precisa ser uma lista de objetos [{}, {}].");
+                    }
+
+                    dadosParaMigrar = json;
+                    infoRegistros.textContent = `Total de registros detectados prontos para migrar: ${dadosParaMigrar.length}`;
+                    painelPreview.classList.remove('hidden');
+                    btnProcessar.disabled = false;
+
+                } catch (err) {
+                    Swal.fire('Erro no arquivo', err.message, 'error');
+                    inputFile.value = '';
+                    btnProcessar.disabled = true;
+                    painelPreview.classList.add('hidden');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        // --- PROCESSAMENTO DA MIGRAÇÃO ---
+        btnProcessar.onclick = async () => {
+            const url = inputUrl.value.trim();
+            const key = inputKey.value.trim();
+
+            if (!url || !key) {
+                return Swal.fire('Atenção', 'Insira a URL e a Anon Key do seu Supabase.', 'warning');
+            }
+
+            // Inicializa cliente local do Supabase
+            const supabaseLocal = supabase.createClient(url, key);
+
+            // Confirmação antes de disparar a carga de dados
+            const confirmacao = await Swal.fire({
+                title: 'Iniciar Migração?',
+                text: `Você está prestes a enviar ${dadosParaMigrar.length} registros para o banco de dados.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, enviar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!confirmacao.isConfirmed) return;
+
+            // Bloqueia tela durante envio
+            Swal.fire({
+                title: 'Enviando dados...',
+                text: 'Por favor, aguarde o término do processo.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                // Mapeamento dos campos baseado nas colunas da planilha/JSON
+                const payload = dadosParaMigrar.map(item => ({
+                    nome: item.nome || item.Nome, 
+                    usuario: item.usuario || item.Usuario || null,
+                    curso_concluido: item.curso_concluido || item.Curso || null,
+                    dia_aula: item.dia_aula || item.Dia || null,
+                    horario_estudo: item.horario_estudo || item.Horario || null,
+                    data_conclusao: formatarDataParaAnoMesDia(item.data_conclusao || item.Data),
+                    certificado: item.certificado || item.Certificado || null
+                }));
+
+                // Insere em lote no Supabase
+                const { error } = await supabaseLocal
+                    .from('concluidos')
+                    .insert(payload);
+
+                if (error) throw error;
+
+                // Sucesso na inserção
+                Swal.fire({
+                    title: 'Migração Concluída!',
+                    text: `${payload.length} registros foram inseridos com sucesso na tabela "concluidos".`,
+                    icon: 'success'
+                });
+
+                // Reseta o estado da página
+                inputFile.value = '';
+                btnProcessar.disabled = true;
+                painelPreview.classList.add('hidden');
+                dadosParaMigrar = [];
+
+            } catch (err) {
+                Swal.fire('Falha na Migração', err.message, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
