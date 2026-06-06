@@ -49,7 +49,7 @@
             Swal.fire({
                 title: 'Ativar notificações?',
                 text: 'Deseja ser avisado quando receber uma nova mensagem no chat?',
-                icon: 'bell',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#28a745',
                 cancelButtonColor: '#6c757d',
