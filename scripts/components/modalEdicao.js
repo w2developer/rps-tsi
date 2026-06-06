@@ -29,19 +29,15 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
                                 <input type="date" id="edit-nascimento" style="width: 100%; padding: 8px;">
                             </div>
                             <div style="flex: 1;">
-                                <label>Código de Acesso:</label>
-                                <input type="text" id="edit-codigo" style="width: 100%; padding: 8px;">
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex: 1;">
                                 <label>Turma:</label>
                                 <select id="edit-turma" style="width: 100%; padding: 8px;">
                                     <option value="Manhã">Manhã</option>
                                     <option value="Tarde">Tarde</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
                                 <label>Dia de Aula:</label>
                                 <select id="edit-dia" style="width: 100%; padding: 8px;">
@@ -52,13 +48,13 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
                                     <option value="Flexível">Flexível</option>
                                 </select>
                             </div>
+                            <div style="flex: 1;">
+                                <label>Horário de Estudo:</label>
+                                <select id="edit-horario" style="width: 100%; padding: 8px;">
+                                </select>
+                            </div>
                         </div>
                         
-                        <div>
-                            <label>Horário de Estudo:</label>
-                            <select id="edit-horario" style="width: 100%; padding: 8px;">
-                            </select>
-                        </div>
 
                         <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
@@ -116,7 +112,7 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
     const campos = {
         nome: document.getElementById('edit-nome'),
         nascimento: document.getElementById('edit-nascimento'),
-        codigo: document.getElementById('edit-codigo'),
+        // codigo: document.getElementById('edit-codigo'),
         turma: document.getElementById('edit-turma'),
         dia: document.getElementById('edit-dia'),
         horario: document.getElementById('edit-horario'),
@@ -173,11 +169,11 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
     const textoAtual = obsExistente ? obsExistente.texto_obs : "";
     const ultimaFreq = aluno.frequencia?.sort((a, b) => new Date(b.data_presenca) - new Date(a.data_presenca))[0] || null;
     const dataFreqAtual = ultimaFreq ? ultimaFreq.data_presenca : "";
-    const codigoAtual = aluno.usuarios_aluno?.[0]?.codigo || "";
+    // const codigoAtual = aluno.usuarios_aluno?.[0]?.codigo || "";
 
     campos.nome.value = aluno.nome;
     campos.nascimento.value = aluno.data_nascimento || "";
-    campos.codigo.value = codigoAtual;
+    // campos.codigo.value = codigoAtual;
     campos.turma.value = aluno.turma;
     campos.dia.value = aluno.dia_aula;
     campos.termino.value = aluno.data_termino;
@@ -195,7 +191,7 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
         const alterado = 
             campos.nome.value !== aluno.nome ||
             campos.nascimento.value !== (aluno.data_nascimento || "") ||
-            campos.codigo.value !== codigoAtual ||
+            // campos.codigo.value !== codigoAtual ||
             campos.turma.value !== aluno.turma ||
             campos.dia.value !== aluno.dia_aula ||
             campos.horario.value !== (aluno.horario_estudo || "Flexível") ||
@@ -238,20 +234,20 @@ export async function abrirModalEdicao(alunoId, supabase, aoSalvar) {
         if (errA) return Swal.fire('Erro', "Erro ao salvar dados do aluno.", 'error');
 
         // 2. Atualiza ou insere as credenciais do usuário
-        if (campos.codigo.value) {
-            const anoNasc = campos.nascimento.value ? campos.nascimento.value.split('-')[0] : '0000';
-            const payloadUser = {
-                aluno_id: alunoId,
-                codigo: campos.codigo.value,
-                senha: anoNasc
-            };
+        // if (campos.codigo.value) {
+        //     const anoNasc = campos.nascimento.value ? campos.nascimento.value.split('-')[0] : '0000';
+        //     const payloadUser = {
+        //         aluno_id: alunoId,
+        //         codigo: campos.codigo.value,
+        //         senha: anoNasc
+        //     };
 
-            if (aluno.usuarios_aluno && aluno.usuarios_aluno.length > 0) {
-                await supabase.from('usuarios_aluno').update(payloadUser).eq('aluno_id', alunoId);
-            } else {
-                await supabase.from('usuarios_aluno').insert([payloadUser]);
-            }
-        }
+        //     if (aluno.usuarios_aluno && aluno.usuarios_aluno.length > 0) {
+        //         await supabase.from('usuarios_aluno').update(payloadUser).eq('aluno_id', alunoId);
+        //     } else {
+        //         await supabase.from('usuarios_aluno').insert([payloadUser]);
+        //     }
+        // }
 
         // 3. Atualização de Observações
         if (campos.obs.value !== textoAtual) {
