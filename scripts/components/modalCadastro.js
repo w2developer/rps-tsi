@@ -29,11 +29,11 @@ export function abrirModalCadastro(supabase, aoSalvar) {
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label>Data de Nascimento:</label>
-                            <input type="date" id="cad-nascimento" required style="width: 100%; padding: 8px;">
+                            <input type="date" id="cad-nascimento" style="width: 100%; padding: 8px;">
                         </div>
                         <div style="flex: 1;">
                             <label>Código de Acesso:</label>
-                            <input type="text" id="cad-codigo" required style="width: 100%; padding: 8px;">
+                            <input type="text" id="cad-codigo" style="width: 100%; padding: 8px;">
                         </div>
                     </div>
 
