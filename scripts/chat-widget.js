@@ -104,7 +104,7 @@
             if (total > 0 && !chatContainer.classList.contains('active')) {
                 rpsGlobalBadge.textContent = total;
                 rpsGlobalBadge.style.display = 'flex';
-                document.title = `( ${total} ) RPS | Relatório Pedagógico Semanal`
+                document.title = `( ${total} ) Nova Mensagem`
             } else {
                 rpsGlobalBadge.style.display = 'none';
                 document.title = `RPS | Relatório Pedagógico Semanal`
