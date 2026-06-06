@@ -39,6 +39,11 @@
         const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
         const MEU_ID = usuarioAtivo ? usuarioAtivo.nome : "Admin";
 
+        // Pede permissão para notificações nativas
+        if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+
         let contatoAtivoId = null;
         let listaUsuariosLocal = [];
         let usuariosOnline = {};
@@ -329,6 +334,30 @@
                             timer: 4000
                         });
                         
+                        // Dispara alerta nativo se o usuário estiver em outra aba
+                            if (document.hidden && Notification.permission === "granted") {
+                                const alertaNativo = new Notification(`Mensagem de ${novaMsg.remetente_id}`, {
+                                    body: novaMsg.conteudo_mensagem,
+                                    tag: `chat-${novaMsg.remetente_id}`,
+                                    renotify: true
+                                });
+
+                                // Foca na aba e abre o chat ao clicar
+                                alertaNativo.onclick = function(event) {
+                                    event.preventDefault();
+                                    window.focus();
+                                    
+                                    if (!chatContainer.classList.contains('active')) {
+                                        chatBtn.click();
+                                    }
+                                    selecionarContato(novaMsg.remetente_id);
+                                    alertaNativo.close();
+                                };
+
+                                // Fecha sozinho em 5 segundos
+                                setTimeout(() => alertaNativo.close(), 5000);
+                            }
+
                         const badge = document.getElementById(`rps-badge-${novaMsg.remetente_id.trim()}`);
                         if (badge) {
                             const atual = parseInt(badge.textContent) || 0;
