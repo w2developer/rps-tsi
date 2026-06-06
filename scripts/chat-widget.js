@@ -39,10 +39,42 @@
         const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
         const MEU_ID = usuarioAtivo ? usuarioAtivo.nome : "Admin";
 
-        // Pede permissão para notificações nativas
-        if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission();
+        function solicitarPermissaoNotificacao() {
+            // Sai se não suporta ou se a permissão já foi respondida
+            if (!("Notification" in window) || Notification.permission !== "default") {
+                return;
             }
+
+            // Cria o pré-aviso amigável com SweetAlert2
+            Swal.fire({
+                title: 'Ativar notificações?',
+                text: 'Deseja ser avisado quando receber uma nova mensagem no chat?',
+                icon: 'bell',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, ativar!',
+                cancelButtonText: 'Agora não'
+            }).then((resultado) => {
+                
+                // Se clicar em "Sim", aciona o pedido nativo
+                if (resultado.isConfirmed) {
+                    Notification.requestPermission().then(permissao => {
+                        if (permissao === "granted") {
+                            Swal.fire({
+                                title: 'Tudo certo!',
+                                text: 'As notificações foram ativadas com sucesso.',
+                                icon: 'success',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    });
+                }
+            });
+        }
 
         let contatoAtivoId = null;
         let listaUsuariosLocal = [];
@@ -119,6 +151,18 @@
 
         chatBtn.addEventListener('click', () => {
             chatContainer.classList.toggle('active');
+
+            // Pede a permissão apenas se ele abrir o chat
+            if (chatContainer.classList.contains('active')) {
+                rpsGlobalBadge.style.display = 'none';
+                solicitarPermissaoNotificacao(); // <--- Chama a função aqui
+            } else {
+                conversationView.classList.add('rps-hidden');
+                contactsView.classList.remove('rps-hidden');
+                contatoAtivoId = null;
+                atualizarContadorGlobal();
+            }
+
             if (chatContainer.classList.contains('active')) {
                 rpsGlobalBadge.style.display = 'none';
             } else {
@@ -355,7 +399,7 @@
                                 };
 
                                 // Fecha sozinho em 5 segundos
-                                setTimeout(() => alertaNativo.close(), 5000);
+                                setTimeout(() => alertaNativo.close(), 60000);
                             }
 
                         const badge = document.getElementById(`rps-badge-${novaMsg.remetente_id.trim()}`);
