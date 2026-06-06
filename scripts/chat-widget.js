@@ -155,7 +155,7 @@
             // Pede a permissão apenas se ele abrir o chat
             if (chatContainer.classList.contains('active')) {
                 rpsGlobalBadge.style.display = 'none';
-                solicitarPermissaoNotificacao(); // <--- Chama a função aqui
+                solicitarPermissaoNotificacao();
             } else {
                 conversationView.classList.add('rps-hidden');
                 contactsView.classList.remove('rps-hidden');
@@ -367,40 +367,30 @@
                             _supabase.from('mensagens_privadas').update({ lida: true }).eq('id', novaMsg.id).then();
                         }
                     } else if (novaMsg.destinatario_id.trim() === MEU_ID.trim()) {
-                        Swal.fire({
-                            target: document.getElementById('rpsChatContainer'),
-                            title: `Nova mensagem de ${novaMsg.remetente_id}`,
-                            text: novaMsg.conteudo_mensagem,
-                            icon: 'info',
-                            toast: true,
-                            position: 'bottom-left',
-                            showConfirmButton: false,
-                            timer: 4000
-                        });
-                        
                         // Dispara alerta nativo se o usuário estiver em outra aba
-                            if (document.hidden && Notification.permission === "granted") {
-                                const alertaNativo = new Notification(`Mensagem de ${novaMsg.remetente_id}`, {
-                                    body: novaMsg.conteudo_mensagem,
-                                    tag: `chat-${novaMsg.remetente_id}`,
-                                    renotify: true
-                                });
+                        if (document.hidden && Notification.permission === "granted") {
+                            const alertaNativo = new Notification(`Mensagem de ${novaMsg.remetente_id}`, {
+                                body: novaMsg.conteudo_mensagem,
+                                tag: `chat-${novaMsg.remetente_id}`,
+                                renotify: true,
+                                requireInteraction: true // <--- Mantém a notificação fixa na tela
+                            });
 
-                                // Foca na aba e abre o chat ao clicar
-                                alertaNativo.onclick = function(event) {
-                                    event.preventDefault();
-                                    window.focus();
-                                    
-                                    if (!chatContainer.classList.contains('active')) {
-                                        chatBtn.click();
-                                    }
-                                    selecionarContato(novaMsg.remetente_id);
-                                    alertaNativo.close();
-                                };
+                            // Foca na aba e abre o chat ao clicar
+                            alertaNativo.onclick = function(event) {
+                                event.preventDefault();
+                                window.focus();
+                                
+                                if (!chatContainer.classList.contains('active')) {
+                                    chatBtn.click();
+                                }
+                                selecionarContato(novaMsg.remetente_id);
+                                alertaNativo.close();
+                            };
 
-                                // Fecha sozinho em 5 segundos
-                                setTimeout(() => alertaNativo.close(), 60000);
-                            }
+                            // Fecha sozinho em 5 segundos
+                            // setTimeout(() => alertaNativo.close(), 60000);
+                        }
 
                         const badge = document.getElementById(`rps-badge-${novaMsg.remetente_id.trim()}`);
                         if (badge) {
