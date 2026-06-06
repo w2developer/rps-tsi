@@ -1,5 +1,5 @@
 .swal2-container {
-    /* crie um efeito blur */
+    z-index: 999999 !important;
     backdrop-filter: blur(5px) !important;
 }
 
