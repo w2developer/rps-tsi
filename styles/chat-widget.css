@@ -340,13 +340,14 @@
     gap: 10px;
     display: flex;
     padding: 10px 15px;
-    align-items: center;
+    align-items: end;
     background: #ffffff;
     border-top: 1px solid #e9ecef;
 }
 
 .rps-chat-input-form textarea {
     flex: 1;
+    height: 40px;
     resize: none;
     outline: none;
     font-size: 13px;
@@ -364,7 +365,7 @@
 }
 
 #rpsInputMsg::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 #rpsInputMsg::-webkit-scrollbar-track {

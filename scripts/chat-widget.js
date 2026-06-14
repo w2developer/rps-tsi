@@ -108,7 +108,7 @@
                         </div>
                         <div class="rps-messages-zone" id="rpsMessagesZone"></div>
                         <form class="rps-chat-input-form" id="rpsChatForm">
-                            <textarea id="rpsInputMsg" placeholder="Sua mensagem..." required rows="2"></textarea>
+                            <textarea id="rpsInputMsg" placeholder="Sua mensagem..." required rows="1"></textarea>
                             <button type="submit" id="rpsSendBtn"><i class="ri-send-plane-2-fill"></i></button>
                         </form>
                     </div>
@@ -148,6 +148,17 @@
             }
         }
 
+        function autoResize() {
+            rpsInputMsg.style.height = 'auto';
+            rpsInputMsg.style.height = rpsInputMsg.scrollHeight + 'px';
+
+            // Limita a altura máxima a 150px
+            if (rpsInputMsg.scrollHeight > 250) {
+                rpsInputMsg.style.height = '250px';
+            }
+        }
+
+        rpsInputMsg.addEventListener('input', autoResize);
 
         chatBtn.addEventListener('click', () => {
             chatContainer.classList.toggle('active');
@@ -178,6 +189,8 @@
             conversationView.classList.add('rps-hidden');
             contactsView.classList.remove('rps-hidden');
             contatoAtivoId = null;
+            rpsInputMsg.value = "";
+            rpsInputMsg.style.height = "40px";
             rpsMessagesZone.innerHTML = "";
             atualizarContadorGlobal();
         });
@@ -186,6 +199,8 @@
             conversationView.classList.add('rps-hidden');
             contactsView.classList.remove('rps-hidden');
             contatoAtivoId = null;
+            rpsInputMsg.value = "";
+            rpsInputMsg.style.height = "40px";
             rpsMessagesZone.innerHTML = "";
             atualizarContadorGlobal();
         });
@@ -323,6 +338,7 @@
             if (!texto || !contatoAtivoId) return;
 
             rpsInputMsg.value = '';
+            autoResize()
 
             await _supabase.from('mensagens_privadas').insert([{
                 remetente_id: MEU_ID,
