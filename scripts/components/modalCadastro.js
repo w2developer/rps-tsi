@@ -28,19 +28,12 @@ export function abrirModalCadastro(supabase, aoSalvar) {
                     
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
-                            <label>Data de Nascimento:</label>
-                            <input type="date" id="cad-nascimento" style="width: 100%; padding: 8px;">
-                        </div>
-                        <div style="flex: 1;">
                             <label>Turma:</label>
                             <select id="cad-turma" style="width: 100%; padding: 8px;">
                                 <option value="Manhã">Manhã</option>
                                 <option value="Tarde">Tarde</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label>Dia de Aula:</label>
                             <select id="cad-dia" style="width: 100%; padding: 8px;">
@@ -51,13 +44,16 @@ export function abrirModalCadastro(supabase, aoSalvar) {
                                 <option value="Flexível">Flexível</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label>Horário de Estudo:</label>
                             <select id="cad-horario" style="width: 100%; padding: 8px;"></select>
                         </div>
                         <div style="flex: 1;">
                             <label>Data de Término:</label>
-                            <input type="date" id="cad-termino" required style="width: 100%; padding: 8px;">
+                            <input type="date" id="cad-termino" required style="width: 100%; padding: 6px;">
                         </div>
                     </div>
 
@@ -128,7 +124,6 @@ export function abrirModalCadastro(supabase, aoSalvar) {
 
                 const listaAlunos = dadosBrutos.map(item => ({
                     nome: item.nome,
-                    data_nascimento: item.data_nascimento || null,
                     turma: item.turma,
                     dia_aula: item.dia_aula,
                     horario_estudo: item.horario_estudo,
@@ -156,11 +151,10 @@ export function abrirModalCadastro(supabase, aoSalvar) {
                         });
 
                         if (dadosOriginais.codigo) {
-                            const ano = dadosOriginais.data_nascimento ? dadosOriginais.data_nascimento.split('-')[0] : '0000';
                             registrosUsuarios.push({
                                 aluno_id: alunoInserido.id,
                                 codigo: dadosOriginais.codigo,
-                                senha: ano
+                                senha: '0000'
                             });
                         }
                     }
@@ -185,12 +179,8 @@ export function abrirModalCadastro(supabase, aoSalvar) {
     document.getElementById('form-cadastro-aluno').onsubmit = async (e) => {
         e.preventDefault();
         
-        const dataNasc = document.getElementById('cad-nascimento').value;
-        const anoNasc = dataNasc ? dataNasc.split('-')[0] : '0000';
-
         const novoAluno = {
             nome: document.getElementById('cad-nome').value,
-            data_nascimento: dataNasc,
             turma: cadTurma.value,
             dia_aula: cadDia.value,
             horario_estudo: cadHorario.value,
@@ -205,7 +195,7 @@ export function abrirModalCadastro(supabase, aoSalvar) {
         // const { error: errUser } = await supabase.from('usuarios_aluno').insert([{
         //     aluno_id: aluno[0].id,
         //     codigo: document.getElementById('cad-codigo').value,
-        //     senha: anoNasc
+        //     senha: '0000'
         // }]);
 
         // if (errUser) return Swal.fire('Erro', 'Aluno salvo, mas erro ao criar usuário: ' + errUser.message, 'error');
@@ -224,8 +214,3 @@ export function abrirModalCadastro(supabase, aoSalvar) {
 
     document.getElementById('btn-cancelar-cad').onclick = () => modalDiv.remove();
 }
-
-                        // <div style="flex: 1;">
-                        //     <label>Código de Acesso:</label>
-                        //     <input type="text" id="cad-codigo" style="width: 100%; padding: 8px;">
-                        // </div>
