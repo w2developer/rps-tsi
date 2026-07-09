@@ -359,7 +359,7 @@ window.iserirEmConcluidos = async (id) => {
                 <option value="Inteligência Artificial Fast">
                 <option value="Informática Essencial">
                 <option value="Informática Avançada">
-                <option value="Informática Kids">
+                <option value="Designer Gráfico">
             </datalist>
         `,
         showCancelButton: true,
