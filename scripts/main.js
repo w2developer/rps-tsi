@@ -49,14 +49,20 @@ const calcularStatusFrequencia = (historico) => {
 
 const calcularTempoConclusao = (dataTermino) => {
     if (!dataTermino) return "---";
+
     const diffMs = new Date(dataTermino) - new Date();
-    if (diffMs < 0) return "---";
-    
-    const totalDias = Math.floor(diffMs / MS_PER_DAY);
+    const isNegativo = diffMs < 0;
+
+    // Usa valor absoluto para calcular os períodos corretamente
+    const totalDias = Math.floor(Math.abs(diffMs) / MS_PER_DAY);
     const meses = Math.floor(totalDias / 30);
     const semanas = Math.floor((totalDias % 30) / 7);
     const dias = totalDias % 7;
-    return `${meses}m, ${semanas}sem e ${dias}d`;
+
+    // Aplica o sinal no início da string se o prazo já passou
+    const prefixo = isNegativo ? "-" : "";
+    
+    return `${prefixo}${meses}m, ${semanas}sem e ${dias}d`;
 };
 
 const tempoConclusaoEmDias = (dataTermino) => {
@@ -65,6 +71,12 @@ const tempoConclusaoEmDias = (dataTermino) => {
     const diffMs = dataFim - new Date();
     const totalDias = Math.floor(diffMs / MS_PER_DAY);
     return totalDias <= 30 && totalDias > 0;
+};
+
+// Verifica se o prazo já passou
+const isAtrasado = (dataTermino) => {
+    if (!dataTermino) return false;
+    return new Date(dataTermino) - new Date() < 0;
 };
 
 // Função Debounce para performance da pesquisa
@@ -163,11 +175,15 @@ async function carregarAlunos() {
     const hoje = new Date().toISOString().split('T')[0];
     const fragmento = document.createDocumentFragment();
 
-    alunos.filter(a => a.nome.toLowerCase().includes(termoPesquisa)).forEach(aluno => {
+alunos.filter(a => a.nome.toLowerCase().includes(termoPesquisa)).forEach(aluno => {
+        // Variáveis existentes...
         const freqStatus = calcularStatusFrequencia(aluno.frequencia);
         const presencaHoje = (aluno.frequencia || []).find(p => p.data_presenca === hoje);
         const tarefasPendentes = (aluno.tarefas || []).filter(t => !t.concluida).length;
         const ultimaData = obterUltimaDataISO(aluno.frequencia) || "---";
+
+        // Identifica se o aluno é flexível
+        const isFlexivel = aluno.horario_estudo === 'Flexível' || aluno.dia_aula === 'Flexível';
 
         const exibirHorario = aluno.horario_estudo && aluno.horario_estudo !== 'Flexível' 
             ? aluno.horario_estudo 
@@ -187,14 +203,18 @@ async function carregarAlunos() {
                 </div>
             </td>
             <td>${formatarDataBR(aluno.data_termino)}</td>
-            <td class="${tempoConclusaoEmDias(aluno.data_termino) ? 'rematricula' : ''}">
-                ${tempoConclusaoEmDias(aluno.data_termino) ? 
-                    (aluno.rematricula === 'no' ? 
-                        `<button onclick="marcarRematricula(${aluno.id}, '${aluno.nome}')" class="no">Aguardando Rematrícula</button>` :
-                        `<button onclick="desmarcarRematricula(${aluno.id}, '${aluno.nome}')" class="yes">Rematrícula OK</button>`
-                    ) : calcularTempoConclusao(aluno.data_termino)
+            
+            <!-- Aplica a regra do flexível na cor e no conteúdo -->
+            <td class="${isFlexivel ? '' : (tempoConclusaoEmDias(aluno.data_termino) ? 'rematricula' : (isAtrasado(aluno.data_termino) ? 'atrasado' : ''))}">
+                ${isFlexivel ? '---' : 
+                    tempoConclusaoEmDias(aluno.data_termino) ? 
+                        (aluno.rematricula === 'no' ? 
+                            `<button onclick="marcarRematricula(${aluno.id}, '${aluno.nome}')" class="no">Aguardando Rematrícula</button>` :
+                            `<button onclick="desmarcarRematricula(${aluno.id}, '${aluno.nome}')" class="yes">Rematrícula OK</button>`
+                        ) : calcularTempoConclusao(aluno.data_termino)
                 }
             </td>
+            
             <td>${exibirUltimaPresenca}</td>
             <td class="status-frequencia ${freqStatus === 'Muitas Faltas' ? 'muitas-faltas' : ''}">
                 ${freqStatus === 'Muitas Faltas' ? 

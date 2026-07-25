@@ -152,3 +152,6 @@ table thead th {
     border: 1px solid #86c176;
 }
 
+.atrasado {
+    color: red; 
+}
