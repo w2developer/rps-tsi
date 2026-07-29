@@ -139,12 +139,13 @@ function atualizarOpcoesHorario() {
 // --- LÓGICA DE DADOS ---
 
 async function carregarAlunos() {
-    const tabela = document.getElementById('corpo-tabela');
+const tabela = document.getElementById('corpo-tabela');
     if (!tabela) return;
 
     const valorTurma = document.getElementById('turma').value;
     const valorDia = document.getElementById('dia').value;
     const valorHorario = document.getElementById('horario').value;
+    const tipoAluno = document.getElementById('tipoAluno').value; // <-- Captura o novo select
     const termoPesquisa = document.getElementById('pesquisa').value.toLowerCase();
 
     const deParaTurma = { "manha": "Manhã", "tarde": "Tarde" };
@@ -155,14 +156,30 @@ async function carregarAlunos() {
         .select('*, frequencia(*), tarefas(*)')
         .order('nome'); 
 
-    if (valorTurma !== "todos") query = query.eq('turma', deParaTurma[valorTurma]);
-    if (valorDia !== "todos") query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
-
-    if (valorHorario !== "todos") {
-        const diaSelecionado = document.getElementById('dia').value;
-        if (['sexta', 'sabado'].includes(diaSelecionado)) {
-            query = query.eq('horario_estudo', valorHorario);
-        } else {
+    // --- NOVA LÓGICA DO TIPO DE ALUNO ---
+    if (tipoAluno === 'flexivel') {
+        // Traz APENAS flexíveis e ignora os outros filtros de turma/dia/horário 
+        // para "aparecer todos mesmo de manhã e tarde"
+        query = query.or('dia_aula.eq."Flexível",horario_estudo.eq."Flexível"');
+    } 
+    else if (tipoAluno === 'normal') {
+        // Traz APENAS normais, escondendo os flexíveis
+        query = query.neq('dia_aula', 'Flexível').neq('horario_estudo', 'Flexível');
+        
+        // Aplica os filtros padrão apenas para alunos normais
+        if (valorTurma !== "todos") query = query.eq('turma', deParaTurma[valorTurma]);
+        if (valorDia !== "todos") query = query.eq('dia_aula', deParaDia[valorDia]);
+        if (valorHorario !== "todos") query = query.eq('horario_estudo', valorHorario);
+    } 
+    else {
+        // Se a opção for "Todos", junta a lógica (aplica filtros no normal, mas força o flexível a aparecer)
+        if (valorTurma !== "todos") query = query.eq('turma', deParaTurma[valorTurma]);
+        
+        // Se um dia ou horário específico for selecionado, mostramos o normal correspondente OU os flexíveis
+        if (valorDia !== "todos") {
+            query = query.in('dia_aula', [deParaDia[valorDia], 'Flexível']);
+        }
+        if (valorHorario !== "todos") {
             query = query.or(`horario_estudo.eq."${valorHorario}",horario_estudo.eq."Flexível"`);
         }
     }
@@ -175,7 +192,7 @@ async function carregarAlunos() {
     const hoje = new Date().toISOString().split('T')[0];
     const fragmento = document.createDocumentFragment();
 
-alunos.filter(a => a.nome.toLowerCase().includes(termoPesquisa)).forEach(aluno => {
+    alunos.filter(a => a.nome.toLowerCase().includes(termoPesquisa)).forEach(aluno => {
         // Variáveis existentes...
         const freqStatus = calcularStatusFrequencia(aluno.frequencia);
         const presencaHoje = (aluno.frequencia || []).find(p => p.data_presenca === hoje);
@@ -536,6 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // EVENTOS COM DEBOUNCE NA PESQUISA
     if (inputPesquisa) inputPesquisa.addEventListener('input', debounce(carregarAlunos, 300));
+    
+    document.getElementById('tipoAluno')?.addEventListener('change', carregarAlunos);
     
     selectTurma?.addEventListener('change', () => { atualizarOpcoesHorario(); carregarAlunos(); });
     selectDia?.addEventListener('change', () => { atualizarOpcoesHorario(); carregarAlunos(); });
