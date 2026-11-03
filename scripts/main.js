@@ -266,7 +266,7 @@ const tabela = document.getElementById('corpo-tabela');
                                 <i class="ri-edit-fill"></i>
                                 <span>Editar Aluno</span>
                             </button>
-                            <button onclick="iserirEmConcluidos(${aluno.id})">
+                            <button onclick="iserirEmConcluidos(${aluno.id})" style="display: none;">
                                 <i class="ri-external-link-line"></i>
                                 <span>Inserir em Concluídos</span>
                             </button>
