@@ -11,7 +11,8 @@ export function abrirModalNovoConcluido(supabase, aoSalvar) {
                 <h2>Cadastrar Novo Concluído</h2>
             </div>
             <div class="body-modal">
-                <form id="form-cadastro-concluido" style="display: flex; flex-direction: column; gap: 15px;">
+                <span>Novo registro apenas em <a href="https://nexoz.onrender.com/">NexoZ</a></span>
+                <form id="form-cadastro-concluido" style="display: none; flex-direction: column; gap: 15px;">
                     <div>
                         <label>Nome Completo:</label>
                         <input type="text" id="cad-nome" required style="width: 100%; padding: 8px;">
