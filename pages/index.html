@@ -33,6 +33,39 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        /* Container da barra */
+        .migration-banner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 20px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            border-bottom: 1px solid #ffeeba;
+            gap: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Botão de redirecionamento */
+        .btn-migrate {
+            background-color: #24335c;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Efeito de hover no botão */
+        .btn-migrate:hover {
+            background-color: #1a2543;
+        }
+    </style>
 </head>
 <body>
     <div class="box-loader">
@@ -52,6 +85,11 @@
             <button id="logout-button">Sair</button>
         </div>
     </header>
+
+    <div class="migration-banner">
+        <span>Uma versão mais rápida e moderna do sistema está disponível.</span>
+        <a href="https://nexoz.onrender.com/" class="btn-migrate">Acessar Novo Sistema</a>
+    </div>
 
     <div class="container">
         <div class="filtros-e-adicionar">
@@ -172,6 +210,6 @@
     });
 </script>
 
-<script src="./scripts/chat-widget.js"></script>
+<script src="../scripts/chat-widget.js"></script>
 </body>
 </html>
