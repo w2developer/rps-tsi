@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escolha a Versão do Sistema</title>
+    <style>
+        /* Reset padrão */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Fundo e alinhamento */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Cartão principal */
+        .container {
+            background-color: #ffffff;
+            padding: 40px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+        }
+
+        /* Textos */
+        h1 {
+            color: #333333;
+            margin-bottom: 12px;
+            font-size: 24px;
+        }
+
+        p {
+            color: #666666;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* Estrutura dos botões */
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Base do botão */
+        .btn {
+            display: inline-block;
+            padding: 14px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        /* Botão do novo sistema */
+        .btn-new {
+            background-color: #0056b3;
+            color: #ffffff;
+        }
+
+        .btn-new:hover {
+            background-color: #004494;
+        }
+
+        /* Botão do sistema antigo */
+        .btn-old {
+            background-color: #e4e6eb;
+            color: #333333;
+        }
+
+        .btn-old:hover {
+            background-color: #d8dadf;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nova Versão Disponível</h1>
+        <p>Você deseja migrar agora ou continuar na versão antiga temporariamente?</p>
+        
+        <div class="buttons">
+            <!-- Link para versão nova -->
+            <a href="URL_DO_NOVO_SISTEMA" class="btn btn-new">Migrar para o novo sistema</a>
+            
+            <!-- Link para versão antiga -->
+            <a href="URL_DO_SISTEMA_ANTIGO" class="btn btn-old">Manter no sistema antigo</a>
+        </div>
+    </div>
+</body>
+</html>
