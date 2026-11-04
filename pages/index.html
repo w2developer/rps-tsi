@@ -1,103 +1,177 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escolha a Versão do Sistema</title>
-    <style>
-        /* Reset padrão */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <title>RPS | Relatório Pedagógico Semanal</title>
+    <link rel="shortcut icon" href="/assets/logo.svg" type="image/x-icon">
 
-        /* Fundo e alinhamento */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
 
-        /* Cartão principal */
-        .container {
-            background-color: #ffffff;
-            padding: 40px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 450px;
-            width: 90%;
-        }
+    <!-- Scripts -->
+    <script type="module" src="/scripts/main.js" defer></script>
 
-        /* Textos */
-        h1 {
-            color: #333333;
-            margin-bottom: 12px;
-            font-size: 24px;
-        }
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
-        p {
-            color: #666666;
-            margin-bottom: 30px;
-            font-size: 16px;
-            line-height: 1.5;
-        }
+    <!-- Remix Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css">
 
-        /* Estrutura dos botões */
-        .buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        /* Base do botão */
-        .btn {
-            display: inline-block;
-            padding: 14px 20px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: background-color 0.2s;
-        }
+    <script>
+        // Verifica se existe um usuário no sessionStorage
+        const usuarioAtivo = sessionStorage.getItem('usuario_logado');
 
-        /* Botão do novo sistema */
-        .btn-new {
-            background-color: #0056b3;
-            color: #ffffff;
+        if (!usuarioAtivo) {
+            // Se não estiver logado, manda de volta para o login
+            window.location.href = './login.html';
         }
-
-        .btn-new:hover {
-            background-color: #004494;
-        }
-
-        /* Botão do sistema antigo */
-        .btn-old {
-            background-color: #e4e6eb;
-            color: #333333;
-        }
-
-        .btn-old:hover {
-            background-color: #d8dadf;
-        }
-    </style>
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Nova Versão Disponível</h1>
-        <p>Você deseja migrar agora ou continuar na versão antiga temporariamente?</p>
-        
-        <div class="buttons">
-            <!-- Link para versão nova -->
-            <a href="URL_DO_NOVO_SISTEMA" class="btn btn-new">Migrar para o novo sistema</a>
-            
-            <!-- Link para versão antiga -->
-            <a href="URL_DO_SISTEMA_ANTIGO" class="btn btn-old">Manter no sistema antigo</a>
-        </div>
+    <div class="box-loader">
+        <div class="loader"></div>
     </div>
+
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/" class="active-menu">Pagina Inicial</a></li>
+                <li><a href="/pages/concluidos.html">Concluídos</a></li>
+                <li><a href="/pages/logs.html">Logs</a></li>
+            </ul>
+        </nav>
+        <div class="logout">
+            <span id="usuario-logado" style="color: #fff;"></span>
+            <button id="logout-button">Sair</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="filtros-e-adicionar">
+            <div class="filtros">
+                <div class="selecionar turma">
+                    <label for="turma">Turma:</label>
+                    <select id="turma">
+                        <option value="todos" selected>Todas</option>
+                        <option value="manha">Manhã</option>
+                        <option value="tarde">Tarde</option>
+                    </select>
+                </div>
+                <div class="selecionar dia">
+                    <label for="dia">Dia:</label>
+                    <select id="dia">
+                        <option value="todos">Todos</option>
+                        <option value="segunda" selected>Segunda/Terça</option>
+                        <option value="quarta">Quarta/Quinta</option>
+                        <option value="sexta">Sexta</option>
+                        <option value="sabado">Sábado</option>
+                    </select>
+                </div>
+                <div class="selecionar horario">
+                    <label for="horario">Horário:</label>
+                    <select id="horario"></select>
+                </div>
+                <div class="selecionar tipo">
+                    <label for="tipoAluno">Tipo de Aluno</label>
+                    <select id="tipoAluno">
+                        <option value="todos">Todos</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="flexivel">Flexível</option>
+                    </select>
+                </div>
+            </div>
+            <div class="adicionar-aluno">
+                <button class="btn-adicionar" onclick="abrirModalCadastro()">
+                    <i class="ri-add-fill"></i> Adicionar Aluno
+                </button>
+            </div>
+        </div>
+        
+        <div class="section-pesquisa-relatorios">
+            <div class="pesquisa">
+                <input type="text" id="pesquisa" placeholder="Pesquisar aluno...">
+            </div>
+            <div class="acoes-relatorio">
+                <button id="btnTermino" class="btn-pdf btn-termino">
+                    Alunos com Término Proximo (PDF)
+                </button>
+
+                <button id="btnFaltas" class="btn-pdf btn-falta">
+                    Relatório de Faltas Críticas (PDF)
+                </button>
+            </div>
+        </div>
+        
+        <table class="listagem">
+            <colgroup>
+                <col style="width: 30%;">
+                <col style="width: 13%;">
+                <col style="width: 13%;">
+                <col style="width: 13%;">
+                <col style="width: 13%;">
+                <col style="width: 13%;">
+                <col style="width: 5%;">
+            </colgroup>
+
+            <thead>
+                <tr>
+                    <th>Nome (A-Z)</th>
+                    <th>Data de Término</th>
+                    <th>Tempo Para Conclusão</th>
+                    <th>Última Presença <span id="qtd-presente"></span></th>
+                    <th>Status da Frequência</th>
+                    <th>Certificado Premium</th>
+                    <th>Operações</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+        </table>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+
+    window.addEventListener('load', function() {
+        const loaderBox = document.querySelector('.box-loader');
+        if (loaderBox) {
+            loaderBox.style.display = 'none';
+        }
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        const usuarioLogadoSpan = document.getElementById('usuario-logado');
+        const logoutButton = document.getElementById('logout-button');
+
+        // 1. Recupera os dados salvos no login
+        const usuarioAtivo = JSON.parse(sessionStorage.getItem('usuario_logado'));
+
+        // 2. Exibe o nome do usuário se ele existir
+        if (usuarioAtivo && usuarioLogadoSpan) {
+            usuarioLogadoSpan.textContent = `${usuarioAtivo.nome}`;
+        }
+
+        // 3. Função de Logout
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                // Remove os dados da sessão
+                sessionStorage.removeItem('usuario_logado');
+                
+                // Redireciona para a página de login
+                // Como o index está na raiz e o login em pages/, o caminho é 'pages/login.html'
+                window.location.href = './login.html';
+            });
+        }
+    });
+</script>
+
+<script src="./scripts/chat-widget.js"></script>
 </body>
 </html>
